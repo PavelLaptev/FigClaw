@@ -1,7 +1,7 @@
 {
-  "name": "figma-svelte-plugin-boilerplate",
+  "name": "figclaw",
   "version": "1.0.0",
-  "description": "Your Figma Plugin",
+  "description": "FigClaw — an agentic Claude-powered Figma plugin that lets you chat with your canvas, inspect and manipulate nodes, and execute Figma Plugin API code — all from within Figma.",
   "main": "code.js",
   "scripts": {
     "build": "rollup -c --bundleConfigAsCjs",
