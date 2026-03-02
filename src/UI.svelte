@@ -1,6 +1,10 @@
 <script lang="ts">
   import './styles.css';
   import { tick } from 'svelte';
+  import Header from './components/Header.svelte';
+  import Settings from './components/Settings.svelte';
+  import ChatMessage from './components/ChatMessage.svelte';
+  import Composer from './components/Composer.svelte';
 
   // ─── Types ────────────────────────────────────────────────────────────────
   type ContentBlock =
@@ -39,16 +43,20 @@
     {
       name: 'fetch_docs',
       description:
-        'Fetches the content of a URL and returns its plain text. ' +
-        'Only call this when you need to look up an unfamiliar or advanced Figma API — ' +
-        'for common operations (shapes, fills, text, auto-layout, selection) you already know the API and should write code directly.',
+        'Fetches a Figma Plugin API documentation page and returns its content. ' +
+        'Use this when you are unsure about an API type, property, or method signature. ' +
+        'For common operations (shapes, fills, text, auto-layout, selection) you already know the API — skip this tool. ' +
+        'HOW TO USE: ' +
+        '1) To find a slug, fetch the index: https://raw.githubusercontent.com/PavelLaptev/figma-api-snapshot/master/out/index.json ' +
+        '2) Then fetch the page: https://raw.githubusercontent.com/PavelLaptev/figma-api-snapshot/master/out/raw/plugin-api/{slug}.json ' +
+        'Common slug patterns: node types → docs__plugins__api__FrameNode | figma methods → docs__plugins__api__properties__figma-createframe | node props → docs__plugins__api__properties__nodes-fills | data types → docs__plugins__api__Paint',
       input_schema: {
         type: 'object',
         properties: {
           url: {
             type: 'string',
             description:
-              'The URL to fetch. For Figma plugin API use https://developers.figma.com/plugin-docs/',
+              'URL to fetch. Use the snapshot repo URLs described above, e.g. https://raw.githubusercontent.com/PavelLaptev/figma-api-snapshot/master/out/raw/plugin-api/docs__plugins__api__FrameNode.json',
           },
         },
         required: ['url'],
@@ -61,7 +69,9 @@
         'The code runs with full access to the `figma` global — all Plugin API methods are available. ' +
         'Top-level `await` is supported (the code is wrapped in an async function). ' +
         'Before calling this tool, ALWAYS show the code you are about to run in a text message so the user can see it. ' +
-        'Return values are sent back as the tool result.',
+        'IMPORTANT: To read a value back as the tool result, the code MUST end with an explicit `return` statement ' +
+        '(e.g. `return figma.currentPage.name`). Without a `return`, the result will always be `{ ok: true }` ' +
+        'regardless of what the code evaluates — never assume a value from the code unless it is explicitly returned.',
       input_schema: {
         type: 'object',
         properties: {
@@ -122,62 +132,113 @@
     },
   ] as const;
 
-  const SYSTEM_PROMPT = `You are an expert Figma design agent running inside a Figma plugin. You have unrestricted access to the Figma Plugin API via the run_figma_code tool.
+  const SYSTEM_PROMPT = `You are an expert Figma design agent running inside a Figma plugin. You can read and manipulate the Figma document, create and edit nodes, manage styles and variables, and run arbitrary Plugin API code — all through the tools provided.
 
-## Core Figma Plugin API knowledge (use this directly — no need to fetch docs for common tasks)
+## Tools available
 
-Shapes: figma.createFrame(), figma.createRectangle(), figma.createEllipse(), figma.createLine(), figma.createText()
-Text: await figma.loadFontAsync({ family: "Inter", style: "Regular" }) — MUST be called before setting .characters
-Node props: .x .y .width .height .resize(w,h) .name .fills .strokes .opacity .visible .locked
-Fills: [{ type: 'SOLID', color: { r, g, b } }]  (r/g/b are 0–1 floats)
-Layout: .layoutMode ('HORIZONTAL'|'VERTICAL'|'NONE') .primaryAxisSizingMode .counterAxisSizingMode .paddingLeft/Right/Top/Bottom .itemSpacing
-Selection: figma.currentPage.selection — array of nodes; figma.currentPage.selection = [node] to select
-Page: figma.currentPage.children — top-level nodes; node.appendChild(child)
-Grouping: figma.group(nodes, parent); figma.flatten(nodes)
-IDs: node.id; figma.getNodeById(id)
-Plugin close: figma.closePlugin()
+- run_figma_code — execute JavaScript in the Figma plugin sandbox. Full access to the \`figma\` global. Top-level await is supported. Always show the code in a fenced block before running it. **To read any value back you MUST use an explicit \`return\` statement** (e.g. \`return figma.currentPage.name\`). Without \`return\` the result is always \`{ ok: true }\` — never guess or infer a value that was not explicitly returned.
+- get_selection — read currently selected nodes with their serialised properties.
+- get_page_nodes — read top-level nodes on the current page (with optional depth).
+- get_node_by_id — read a specific node by its ID.
+- get_styles — list all local paint and text styles.
+- notify — show a toast in Figma.
+- fetch_docs — fetch a Figma Plugin API reference page. Use this whenever you are unsure about a type, property, or method signature.
+
+## Quick API reference (no need to look these up)
+
+// Creating nodes
+figma.createFrame() | createRectangle() | createEllipse() | createLine() | createText()
+figma.createComponent() | createComponentFromNode(node)
+figma.group(nodes, parent) | figma.flatten(nodes) | figma.ungroup(node)
+
+// Text — font MUST be loaded before setting .characters
+await figma.loadFontAsync({ family: "Inter", style: "Regular" })
+textNode.characters = "Hello"
+textNode.fontSize = 16
+
+// Common node properties
+node.x / node.y / node.width / node.height
+node.resize(w, h) | node.rescale(factor)
+node.name | node.visible | node.locked | node.opacity (0–1)
+node.fills = [{ type: 'SOLID', color: { r, g, b } }]   // r/g/b are 0–1 floats
+node.strokes = [{ type: 'SOLID', color: { r, g, b } }]
+node.strokeWeight | node.strokeAlign ('INSIDE'|'OUTSIDE'|'CENTER')
+node.effects = [{ type: 'DROP_SHADOW', color: {r,g,b,a}, offset: {x,y}, radius, visible: true }]
+node.cornerRadius | node.topLeftRadius | node.topRightRadius | node.bottomLeftRadius | node.bottomRightRadius
+node.blendMode | node.isMask
+node.exportAsync({ format: 'PNG' | 'SVG' | 'PDF', constraint: { type: 'SCALE', value: 2 } })
+
+// Auto-layout (FrameNode)
+frame.layoutMode = 'HORIZONTAL' | 'VERTICAL' | 'NONE'
+frame.primaryAxisSizingMode = 'FIXED' | 'AUTO'
+frame.counterAxisSizingMode = 'FIXED' | 'AUTO'
+frame.primaryAxisAlignItems = 'MIN' | 'CENTER' | 'MAX' | 'SPACE_BETWEEN'
+frame.counterAxisAlignItems = 'MIN' | 'CENTER' | 'MAX' | 'BASELINE'
+frame.paddingLeft | paddingRight | paddingTop | paddingBottom
+frame.itemSpacing | frame.layoutWrap = 'NO_WRAP' | 'WRAP'
+child.layoutSizingHorizontal = 'FIXED' | 'HUG' | 'FILL'
+child.layoutSizingVertical  = 'FIXED' | 'HUG' | 'FILL'
+
+// Tree & selection
+figma.currentPage.selection          // read selected nodes
+figma.currentPage.selection = [node] // set selection
+figma.currentPage.children           // top-level nodes
+parent.appendChild(child) | parent.insertChild(index, child)
+node.remove() | figma.getNodeById(id)
+
+// Styles
+figma.getLocalPaintStyles() | getLocalTextStyles() | getLocalEffectStyles()
+figma.createPaintStyle() | createTextStyle()
+style.name | style.paints | style.fontSize | style.fontName
+
+// Variables (design tokens)
+figma.variables.getLocalVariables() | getLocalVariableCollections()
+figma.variables.createVariable(name, collectionId, resolvedType)
+figma.variables.createVariableCollection(name)
+variable.setValueForMode(modeId, value)
+node.setBoundVariable('fills', variable)
+
+// Misc
+figma.notify("message", { timeout: 3000, error: false })
+figma.closePlugin()
+figma.currentPage.name | figma.root.name
 
 ## Workflow
 
-For COMMON tasks (create shapes, set fills, move/resize, read selection, auto-layout, text):
-1. WRITE CODE directly — you already know the API.
-2. SHOW CODE — put the code in a \`\`\`js fenced block in a text message so the user can see it.
-3. RUN CODE — call run_figma_code with that exact code.
-4. REPORT — summarise the result.
+1. UNDERSTAND — if you need to inspect the canvas, call get_selection or get_page_nodes first.
+2. LOOK UP DOCS (when unsure) — call fetch_docs before writing code for unfamiliar APIs. See "API docs" section below.
+3. SHOW CODE — always display the code in a \`\`\`js block in a text message before executing.
+4. RUN — call run_figma_code with that exact code.
+5. REPORT — briefly summarise what happened or what changed.
 
-For UNFAMILIAR or ADVANCED tasks (component variants, prototyping, plugin data, styles API, etc.):
-1. FETCH DOCS — call fetch_docs with the relevant page URL first.
-2. Then follow steps 2–4 above.
+If run_figma_code returns an error: read it carefully, fix the code, and retry. Only fetch docs if the error suggests a wrong API name or signature.
+
+## API docs (fetch on demand)
+
+The full Figma Plugin API is available as a snapshot at:
+- Slug index: https://raw.githubusercontent.com/PavelLaptev/figma-api-snapshot/master/out/index.json
+- Page template: https://raw.githubusercontent.com/PavelLaptev/figma-api-snapshot/master/out/raw/plugin-api/{slug}.json
+
+Slug patterns:
+- Node types      → docs__plugins__api__FrameNode  /  docs__plugins__api__TextNode
+- figma.* methods → docs__plugins__api__properties__figma-createframe
+- Node properties → docs__plugins__api__properties__nodes-fills
+- Data types      → docs__plugins__api__Paint  /  docs__plugins__api__Effect
+- Sub-namespaces  → docs__plugins__api__figma-variables  /  docs__plugins__api__figma-ui
+
+If unsure of the slug, fetch the index first, search for the relevant title, then fetch that page.
 
 ## Rules
-- Keep code concise and self-contained. Never rely on variables from previous tool calls.
-- If run_figma_code returns an error, read the message carefully. Fix the code without fetching docs unless the error implies a wrong API name.
-- Use get_selection before acting on selected nodes.
-- Prefer run_figma_code over the individual fixed tools for anything beyond trivial reads.`;
+- Code must be self-contained — never reference variables from previous tool calls.
+- Always load fonts before setting text content.
+- Use get_selection before mutating selected nodes.
+- Prefer run_figma_code for all writes; use the read tools (get_selection, get_page_nodes, etc.) for inspecting state.
+- Keep responses concise. Show code, run it, report the outcome.
+- **Always use an explicit \`return\` statement when reading a value** (e.g. \`return figma.currentPage.name\`). Code without \`return\` always yields \`{ ok: true }\` — never state a value you haven't seen in the tool result.`;
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
   function sendToPlugin(msg: Record<string, unknown>) {
     parent.postMessage({ pluginMessage: msg }, '*');
-  }
-
-  type TextPart = { type: 'text'; text: string } | { type: 'code'; lang: string; text: string };
-
-  function splitCodeBlocks(text: string): TextPart[] {
-    const parts: TextPart[] = [];
-    const regex = /```(\w*)\n?([\s\S]*?)```/g;
-    let last = 0;
-    let match: RegExpExecArray | null;
-    while ((match = regex.exec(text)) !== null) {
-      if (match.index > last) {
-        const t = text.slice(last, match.index).trim();
-        if (t) parts.push({ type: 'text', text: t });
-      }
-      parts.push({ type: 'code', lang: match[1] || 'code', text: match[2].trim() });
-      last = match.index + match[0].length;
-    }
-    const tail = text.slice(last).trim();
-    if (tail) parts.push({ type: 'text', text: tail });
-    return parts.length ? parts : [{ type: 'text', text }];
   }
 
   async function scrollBottom() {
@@ -376,12 +437,6 @@ For UNFAMILIAR or ADVANCED tasks (component variants, prototyping, plugin data, 
     await runAgentLoop(text);
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      sendMessage();
-    }
-  }
-
   function clearChat() {
     displayMessages = [];
     apiHistory = [];
@@ -439,33 +494,15 @@ For UNFAMILIAR or ADVANCED tasks (component variants, prototyping, plugin data, 
 </script>
 
 <main class="plugin">
-  <!-- Header -->
-  <header>
-    <h1>Claude Agent</h1>
-    <div class="header-actions">
-      <button class="icon-btn" onclick={clearChat} title="Clear chat">✕</button>
-      <button class="icon-btn" onclick={() => (showSettings = !showSettings)} title="Settings"
-        >⚙</button
-      >
-    </div>
-  </header>
+  <Header onClear={clearChat} onToggleSettings={() => (showSettings = !showSettings)} />
 
-  <!-- Settings panel -->
   {#if showSettings}
-    <section class="settings">
-      <label for="api-key">Claude API key</label>
-      <div class="row">
-        <input id="api-key" type="password" bind:value={apiKeyInput} placeholder="sk-ant-..." />
-        <button
-          class="save-btn"
-          onclick={() => sendToPlugin({ type: 'save-api-key', apiKey: apiKeyInput })}>Save</button
-        >
-      </div>
-      <p class="hint">{hasApiKey ? '✓ API key saved.' : 'No API key saved yet.'}</p>
-
-      <label for="model">Model</label>
-      <input id="model" type="text" bind:value={model} placeholder="claude-sonnet-4-5" />
-    </section>
+    <Settings
+      bind:apiKeyInput
+      bind:model
+      {hasApiKey}
+      onSave={() => sendToPlugin({ type: 'save-api-key', apiKey: apiKeyInput })}
+    />
   {/if}
 
   <!-- Chat messages -->
@@ -477,41 +514,7 @@ For UNFAMILIAR or ADVANCED tasks (component variants, prototyping, plugin data, 
       </p>
     {:else}
       {#each displayMessages as msg}
-        {#if msg.role === 'tool'}
-          <div
-            class="tool-call"
-            class:running={msg.toolStatus === 'running'}
-            class:done={msg.toolStatus === 'done'}
-          >
-            <span class="tool-icon">{msg.toolStatus === 'running' ? '⟳' : '✓'}</span>
-            <span class="tool-name">{msg.text}</span>
-          </div>
-        {:else if msg.role === 'code'}
-          <details class="code-block">
-            <summary class="code-header">
-              <span>JavaScript</span>
-              <span class="code-toggle-hint">show</span>
-            </summary>
-            <pre class="code-body">{msg.text}</pre>
-          </details>
-        {:else}
-          <div class="message {msg.role}">
-            <p class="meta">{msg.role === 'user' ? 'You' : 'Claude'}</p>
-            {#each splitCodeBlocks(msg.text) as part}
-              {#if part.type === 'code'}
-                <details class="code-block inline-code-block">
-                  <summary class="code-header">
-                    <span>{part.lang || 'code'}</span>
-                    <span class="code-toggle-hint">show</span>
-                  </summary>
-                  <pre class="code-body">{part.text}</pre>
-                </details>
-              {:else}
-                <p class="body">{part.text}</p>
-              {/if}
-            {/each}
-          </div>
-        {/if}
+        <ChatMessage {msg} />
       {/each}
       {#if isSending}
         <div class="thinking">
@@ -521,31 +524,18 @@ For UNFAMILIAR or ADVANCED tasks (component variants, prototyping, plugin data, 
     {/if}
   </section>
 
-  <!-- Status bar -->
   {#if statusMessage}
     <p class="status">{statusMessage}</p>
   {/if}
 
-  <!-- Composer -->
-  <section class="composer">
-    <textarea
-      bind:value={prompt}
-      onkeydown={handleKeydown}
-      rows="3"
-      placeholder="Ask Claude to do something in Figma… (⌘↵ to send)"
-      disabled={isSending}
-    ></textarea>
-    <button class="send-btn" onclick={sendMessage} disabled={isSending}>
-      {isSending ? 'Working...' : 'Send'}
-    </button>
-  </section>
+  <Composer bind:prompt {isSending} onSend={sendMessage} />
 </main>
 
 <style>
   :global(body) {
     margin: 0;
     padding: 0;
-    background: #2c2c2c;
+    background: #252525;
     color: white;
     font-family: 'Inter', sans-serif;
   }
@@ -581,68 +571,6 @@ For UNFAMILIAR or ADVANCED tasks (component variants, prototyping, plugin data, 
     gap: 8px;
   }
 
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-  }
-
-  h1 {
-    font-size: 15px;
-    font-weight: 600;
-    margin: 0;
-  }
-
-  .header-actions {
-    display: flex;
-    gap: 4px;
-  }
-
-  .icon-btn {
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.6);
-    cursor: pointer;
-    font-size: 14px;
-    padding: 4px 6px;
-    border-radius: 4px;
-    width: auto;
-  }
-
-  .icon-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-  }
-
-  /* Settings */
-  .settings {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
-    padding: 10px;
-    flex-shrink: 0;
-  }
-
-  .row {
-    display: flex;
-    gap: 6px;
-  }
-
-  label {
-    font-size: 11px;
-    opacity: 0.6;
-    margin: 0;
-  }
-
-  .hint {
-    font-size: 11px;
-    opacity: 0.6;
-    margin: 0;
-  }
-
   /* Chat */
   .chat {
     flex: 1;
@@ -660,133 +588,6 @@ For UNFAMILIAR or ADVANCED tasks (component variants, prototyping, plugin data, 
     margin: auto;
     text-align: center;
     padding: 20px;
-  }
-
-  .message {
-    border-radius: 8px;
-    padding: 8px 10px;
-    line-height: 1.5;
-  }
-
-  .message.user {
-    background: rgba(255, 255, 255, 0.08);
-    align-self: flex-end;
-    max-width: 90%;
-  }
-
-  .message.assistant {
-    background: rgba(120, 169, 255, 0.12);
-    align-self: flex-start;
-    max-width: 95%;
-  }
-
-  .meta {
-    font-size: 10px;
-    opacity: 0.5;
-    margin: 0 0 3px;
-  }
-
-  .body {
-    font-size: 13px;
-    margin: 0;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  /* Code block */
-  .inline-code-block {
-    margin-top: 4px;
-  }
-
-  .code-block {
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    align-self: flex-start;
-    width: 100%;
-  }
-
-  .code-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(255, 255, 255, 0.06);
-    padding: 4px 10px;
-    font-size: 10px;
-    opacity: 0.6;
-    font-family: monospace;
-    cursor: pointer;
-    list-style: none;
-    user-select: none;
-  }
-
-  .code-header::-webkit-details-marker {
-    display: none;
-  }
-
-  .code-toggle-hint {
-    font-size: 10px;
-    opacity: 0.5;
-  }
-
-  .code-block[open] .code-toggle-hint {
-    display: none;
-  }
-
-  .code-body {
-    margin: 0;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.3);
-    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-    font-size: 11px;
-    line-height: 1.6;
-    white-space: pre;
-    overflow-x: auto;
-    color: #e2e8f0;
-  }
-
-  /* Tool call pill */
-  .tool-call {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    padding: 4px 8px;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    width: fit-content;
-    opacity: 0.75;
-  }
-
-  .tool-call.running {
-    border-color: rgba(255, 157, 115, 0.5);
-    opacity: 1;
-  }
-
-  .tool-call.done {
-    border-color: rgba(100, 220, 120, 0.4);
-  }
-
-  .tool-icon {
-    font-size: 12px;
-    animation: none;
-  }
-
-  .tool-call.running .tool-icon {
-    display: inline-block;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .tool-name {
-    font-family: monospace;
-    font-size: 11px;
   }
 
   /* Thinking dots */
@@ -832,79 +633,5 @@ For UNFAMILIAR or ADVANCED tasks (component variants, prototyping, plugin data, 
     margin: 0;
     flex-shrink: 0;
     text-align: center;
-  }
-
-  /* Composer */
-  .composer {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-
-  /* Shared input/button base */
-  input,
-  textarea,
-  button {
-    box-sizing: border-box;
-    width: 100%;
-    border-radius: 6px;
-    font-size: 13px;
-    padding: 8px;
-  }
-
-  input,
-  textarea {
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
-    outline: none;
-  }
-
-  input:focus,
-  textarea:focus {
-    border-color: rgba(255, 255, 255, 0.4);
-  }
-
-  textarea {
-    resize: none;
-    line-height: 1.5;
-    min-height: 60px;
-  }
-
-  textarea:disabled {
-    opacity: 0.5;
-  }
-
-  .save-btn {
-    width: auto;
-    flex-shrink: 0;
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    font-weight: 500;
-    white-space: nowrap;
-  }
-
-  .save-btn:hover {
-    background: rgba(255, 255, 255, 0.18);
-  }
-
-  .send-btn {
-    cursor: pointer;
-    background: #ff9d73;
-    color: black;
-    border: none;
-    font-weight: 600;
-  }
-
-  .send-btn:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  .send-btn:not(:disabled):hover {
-    background: #ffb08c;
   }
 </style>

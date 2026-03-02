@@ -19,8 +19,8 @@
   .update-button {
     font-size: 16px;
     padding: 8px 20px;
-    background-color: #ff9d73;
-    color: rgb(0, 0, 0);
+    background-color: #ff4d4d;
+    color: #fff;
     border: none;
     border-radius: 5px;
     cursor: pointer;
