@@ -4,6 +4,7 @@
   type DisplayMessage = {
     role: 'user' | 'assistant' | 'tool' | 'code';
     text: string;
+    images?: string[];
     toolName?: string;
     toolStatus?: 'running' | 'done' | 'error';
   };
@@ -49,6 +50,13 @@
 {:else}
   <div class="message {msg.role}">
     <p class="meta">{msg.role === 'user' ? 'You' : 'Claude'}</p>
+    {#if msg.images && msg.images.length > 0}
+      <div class="image-grid">
+        {#each msg.images as src}
+          <img class="attached-img" {src} alt="attachment" />
+        {/each}
+      </div>
+    {/if}
     {#each splitCodeBlocks(msg.text) as part}
       {#if part.type === 'code'}
         <details class="code-block inline-code-block">
@@ -58,7 +66,7 @@
           </summary>
           <pre class="code-body">{part.text}</pre>
         </details>
-      {:else}
+      {:else if part.text}
         <p class="body">{part.text}</p>
       {/if}
     {/each}
@@ -95,6 +103,23 @@
     margin: 0;
     white-space: pre-wrap;
     word-break: break-word;
+  }
+
+  /* Attached images */
+  .image-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+
+  .attached-img {
+    max-width: 120px;
+    max-height: 120px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    cursor: zoom-in;
   }
 
   /* Code block */

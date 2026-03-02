@@ -4,11 +4,12 @@
   import Header from './components/Header.svelte';
   import Settings from './components/Settings.svelte';
   import ChatMessage from './components/ChatMessage.svelte';
-  import Composer from './components/Composer.svelte';
+  import Composer, { type AttachedImage } from './components/Composer.svelte';
 
   // ─── Types ────────────────────────────────────────────────────────────────
   type ContentBlock =
     | { type: 'text'; text: string }
+    | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } }
     | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
     | { type: 'tool_result'; tool_use_id: string; content: string };
 
@@ -20,6 +21,7 @@
   type DisplayMessage = {
     role: 'user' | 'assistant' | 'tool' | 'code';
     text: string;
+    images?: string[]; // data URLs for user messages
     toolName?: string;
     toolStatus?: 'running' | 'done' | 'error';
   };
@@ -30,6 +32,7 @@
   let statusMessage = $state('');
   let model = $state('claude-sonnet-4-5');
   let prompt = $state('');
+  let attachedImages = $state<AttachedImage[]>([]);
   let isSending = $state(false);
   let showSettings = $state(false);
 
@@ -325,16 +328,36 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
   // ─── Agent loop ───────────────────────────────────────────────────────────
   let storedApiKey = '';
 
-  async function runAgentLoop(userText: string) {
+  async function runAgentLoop(userText: string, images: AttachedImage[] = []) {
     if (!storedApiKey) {
       statusMessage = 'No API key. Save your Claude API key first.';
       return;
     }
 
     isSending = true;
-    pushDisplay({ role: 'user', text: userText });
+    pushDisplay({ role: 'user', text: userText, images: images.map((i) => i.dataUrl) });
 
-    const userMsg: ApiMessage = { role: 'user', content: userText };
+    // Build multipart content if images are attached
+    let userContent: string | ContentBlock[];
+    if (images.length > 0) {
+      userContent = [
+        ...images.map(
+          (img): ContentBlock => ({
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: img.mediaType,
+              data: img.dataUrl.replace(/^data:[^;]+;base64,/, ''),
+            },
+          })
+        ),
+        ...(userText ? [{ type: 'text' as const, text: userText }] : []),
+      ];
+    } else {
+      userContent = userText;
+    }
+
+    const userMsg: ApiMessage = { role: 'user', content: userContent };
     const history: ApiMessage[] = [...apiHistory, userMsg];
 
     try {
@@ -432,9 +455,11 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
 
   async function sendMessage() {
     const text = prompt.trim();
-    if (!text || isSending) return;
+    const images = attachedImages.slice();
+    if ((!text && images.length === 0) || isSending) return;
     prompt = '';
-    await runAgentLoop(text);
+    attachedImages = [];
+    await runAgentLoop(text, images);
   }
 
   function clearChat() {
@@ -528,7 +553,7 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
     <p class="status">{statusMessage}</p>
   {/if}
 
-  <Composer bind:prompt {isSending} onSend={sendMessage} />
+  <Composer bind:prompt bind:attachedImages {isSending} onSend={sendMessage} />
 </main>
 
 <style>
