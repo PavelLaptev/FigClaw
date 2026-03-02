@@ -39,14 +39,16 @@
     {
       name: 'fetch_docs',
       description:
-        'Fetches the content of a URL (e.g. Figma plugin API docs) and returns the text. ' +
-        'Always call this before writing code for an unfamiliar Figma API to check the correct method signatures.',
+        'Fetches the content of a URL and returns its plain text. ' +
+        'Only call this when you need to look up an unfamiliar or advanced Figma API — ' +
+        'for common operations (shapes, fills, text, auto-layout, selection) you already know the API and should write code directly.',
       input_schema: {
         type: 'object',
         properties: {
           url: {
             type: 'string',
-            description: 'The URL to fetch. For Figma plugin API use https://developers.figma.com/plugin-docs/',
+            description:
+              'The URL to fetch. For Figma plugin API use https://developers.figma.com/plugin-docs/',
           },
         },
         required: ['url'],
@@ -101,184 +103,6 @@
       },
     },
     {
-      name: 'create_frame',
-      description: 'Creates a new frame (container) on the current page.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          width: { type: 'number' },
-          height: { type: 'number' },
-          x: { type: 'number' },
-          y: { type: 'number' },
-          color: {
-            type: 'object',
-            description: 'RGB fill color (values 0–1)',
-            properties: { r: { type: 'number' }, g: { type: 'number' }, b: { type: 'number' } },
-          },
-        },
-        required: ['name', 'width', 'height'],
-      },
-    },
-    {
-      name: 'create_rectangle',
-      description: 'Creates a rectangle shape on the current page.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          width: { type: 'number' },
-          height: { type: 'number' },
-          x: { type: 'number' },
-          y: { type: 'number' },
-          cornerRadius: { type: 'number' },
-          color: {
-            type: 'object',
-            description: 'RGBA fill (values 0–1)',
-            properties: {
-              r: { type: 'number' },
-              g: { type: 'number' },
-              b: { type: 'number' },
-              a: { type: 'number' },
-            },
-          },
-        },
-        required: ['name', 'width', 'height'],
-      },
-    },
-    {
-      name: 'create_text',
-      description: 'Creates a text node on the current page.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          content: { type: 'string', description: 'The visible text' },
-          fontSize: { type: 'number' },
-          x: { type: 'number' },
-          y: { type: 'number' },
-          color: {
-            type: 'object',
-            properties: { r: { type: 'number' }, g: { type: 'number' }, b: { type: 'number' } },
-          },
-        },
-        required: ['name', 'content'],
-      },
-    },
-    {
-      name: 'update_node',
-      description: 'Updates properties of an existing node by ID. Any property can be omitted.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          id: { type: 'string' },
-          name: { type: 'string' },
-          visible: { type: 'boolean' },
-          opacity: { type: 'number' },
-          x: { type: 'number' },
-          y: { type: 'number' },
-          width: { type: 'number' },
-          height: { type: 'number' },
-          cornerRadius: { type: 'number' },
-          characters: { type: 'string', description: 'Text content (TEXT nodes only)' },
-          fontSize: { type: 'number', description: 'Font size (TEXT nodes only)' },
-          color: {
-            type: 'object',
-            description: 'RGBA fill (values 0–1)',
-            properties: {
-              r: { type: 'number' },
-              g: { type: 'number' },
-              b: { type: 'number' },
-              a: { type: 'number' },
-            },
-          },
-        },
-        required: ['id'],
-      },
-    },
-    {
-      name: 'delete_node',
-      description: 'Deletes a node by ID.',
-      input_schema: {
-        type: 'object',
-        properties: { id: { type: 'string' } },
-        required: ['id'],
-      },
-    },
-    {
-      name: 'duplicate_node',
-      description: 'Duplicates a node and optionally repositions the copy.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          id: { type: 'string' },
-          name: { type: 'string' },
-          x: { type: 'number' },
-          y: { type: 'number' },
-        },
-        required: ['id'],
-      },
-    },
-    {
-      name: 'move_node_into',
-      description: 'Moves a node inside another node (re-parents it).',
-      input_schema: {
-        type: 'object',
-        properties: {
-          node_id: { type: 'string' },
-          parent_id: { type: 'string' },
-        },
-        required: ['node_id', 'parent_id'],
-      },
-    },
-    {
-      name: 'group_nodes',
-      description: 'Groups multiple nodes together.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          ids: { type: 'array', items: { type: 'string' }, description: 'Node IDs to group' },
-          name: { type: 'string' },
-        },
-        required: ['ids'],
-      },
-    },
-    {
-      name: 'flatten_node',
-      description: 'Flattens a node into a single vector.',
-      input_schema: {
-        type: 'object',
-        properties: { id: { type: 'string' } },
-        required: ['id'],
-      },
-    },
-    {
-      name: 'set_auto_layout',
-      description: 'Enables auto layout on a frame.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          id: { type: 'string' },
-          direction: { type: 'string', enum: ['horizontal', 'vertical'] },
-          gap: { type: 'number' },
-          padding: { type: 'number' },
-          align: { type: 'string', enum: ['MIN', 'CENTER', 'MAX', 'SPACE_BETWEEN'] },
-        },
-        required: ['id', 'direction'],
-      },
-    },
-    {
-      name: 'select_nodes',
-      description: 'Selects nodes in Figma by their IDs and scrolls them into view.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          ids: { type: 'array', items: { type: 'string' } },
-        },
-        required: ['ids'],
-      },
-    },
-    {
       name: 'get_styles',
       description: 'Returns all local paint and text styles defined in the document.',
       input_schema: { type: 'object', properties: {}, required: [] },
@@ -300,23 +124,60 @@
 
   const SYSTEM_PROMPT = `You are an expert Figma design agent running inside a Figma plugin. You have unrestricted access to the Figma Plugin API via the run_figma_code tool.
 
-Your workflow for ANY task that involves modifying or reading Figma:
-1. LOOK UP DOCS — call fetch_docs with the relevant Figma Plugin API page (e.g. https://developers.figma.com/plugin-docs/ or a specific section) to verify the exact API methods and their signatures.
-2. WRITE CODE — compose clean, correct JavaScript that uses the figma global. Top-level await is available.
-3. SHOW CODE — before executing, always include the code in a plain text message block so the user can read it. Format it as a fenced code block with the \`\`\`js language tag.
-4. RUN CODE — call run_figma_code with the exact same code.
-5. REPORT — summarise what happened based on the tool result.
+## Core Figma Plugin API knowledge (use this directly — no need to fetch docs for common tasks)
 
-Rules:
-- Never guess API method names. Fetch the docs first if unsure.
-- Keep code concise and self-contained. Do not rely on variables from previous runs.
-- If the tool result contains an error, debug by fetching docs again and rewriting the code.
-- Use get_selection to inspect what is currently selected before acting on it.
-- Prefer run_figma_code over the individual fixed tools for complex or novel tasks.`;
+Shapes: figma.createFrame(), figma.createRectangle(), figma.createEllipse(), figma.createLine(), figma.createText()
+Text: await figma.loadFontAsync({ family: "Inter", style: "Regular" }) — MUST be called before setting .characters
+Node props: .x .y .width .height .resize(w,h) .name .fills .strokes .opacity .visible .locked
+Fills: [{ type: 'SOLID', color: { r, g, b } }]  (r/g/b are 0–1 floats)
+Layout: .layoutMode ('HORIZONTAL'|'VERTICAL'|'NONE') .primaryAxisSizingMode .counterAxisSizingMode .paddingLeft/Right/Top/Bottom .itemSpacing
+Selection: figma.currentPage.selection — array of nodes; figma.currentPage.selection = [node] to select
+Page: figma.currentPage.children — top-level nodes; node.appendChild(child)
+Grouping: figma.group(nodes, parent); figma.flatten(nodes)
+IDs: node.id; figma.getNodeById(id)
+Plugin close: figma.closePlugin()
+
+## Workflow
+
+For COMMON tasks (create shapes, set fills, move/resize, read selection, auto-layout, text):
+1. WRITE CODE directly — you already know the API.
+2. SHOW CODE — put the code in a \`\`\`js fenced block in a text message so the user can see it.
+3. RUN CODE — call run_figma_code with that exact code.
+4. REPORT — summarise the result.
+
+For UNFAMILIAR or ADVANCED tasks (component variants, prototyping, plugin data, styles API, etc.):
+1. FETCH DOCS — call fetch_docs with the relevant page URL first.
+2. Then follow steps 2–4 above.
+
+## Rules
+- Keep code concise and self-contained. Never rely on variables from previous tool calls.
+- If run_figma_code returns an error, read the message carefully. Fix the code without fetching docs unless the error implies a wrong API name.
+- Use get_selection before acting on selected nodes.
+- Prefer run_figma_code over the individual fixed tools for anything beyond trivial reads.`;
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
   function sendToPlugin(msg: Record<string, unknown>) {
     parent.postMessage({ pluginMessage: msg }, '*');
+  }
+
+  type TextPart = { type: 'text'; text: string } | { type: 'code'; lang: string; text: string };
+
+  function splitCodeBlocks(text: string): TextPart[] {
+    const parts: TextPart[] = [];
+    const regex = /```(\w*)\n?([\s\S]*?)```/g;
+    let last = 0;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > last) {
+        const t = text.slice(last, match.index).trim();
+        if (t) parts.push({ type: 'text', text: t });
+      }
+      parts.push({ type: 'code', lang: match[1] || 'code', text: match[2].trim() });
+      last = match.index + match[0].length;
+    }
+    const tail = text.slice(last).trim();
+    if (tail) parts.push({ type: 'text', text: tail });
+    return parts.length ? parts : [{ type: 'text', text }];
   }
 
   async function scrollBottom() {
@@ -452,8 +313,8 @@ Rules:
             tool.name === 'run_figma_code'
               ? (tool.input.description as string) || 'run_figma_code'
               : tool.name === 'fetch_docs'
-              ? 'fetch_docs: ' + String(tool.input.url || '')
-              : tool.name;
+                ? 'fetch_docs: ' + String(tool.input.url || '')
+                : tool.name;
 
           // For run_figma_code: show the code block in chat before executing
           if (tool.name === 'run_figma_code' && tool.input.code) {
@@ -583,7 +444,9 @@ Rules:
     <h1>Claude Agent</h1>
     <div class="header-actions">
       <button class="icon-btn" onclick={clearChat} title="Clear chat">✕</button>
-      <button class="icon-btn" onclick={() => (showSettings = !showSettings)} title="Settings">⚙</button>
+      <button class="icon-btn" onclick={() => (showSettings = !showSettings)} title="Settings"
+        >⚙</button
+      >
     </div>
   </header>
 
@@ -593,7 +456,10 @@ Rules:
       <label for="api-key">Claude API key</label>
       <div class="row">
         <input id="api-key" type="password" bind:value={apiKeyInput} placeholder="sk-ant-..." />
-        <button class="save-btn" onclick={() => sendToPlugin({ type: 'save-api-key', apiKey: apiKeyInput })}>Save</button>
+        <button
+          class="save-btn"
+          onclick={() => sendToPlugin({ type: 'save-api-key', apiKey: apiKeyInput })}>Save</button
+        >
       </div>
       <p class="hint">{hasApiKey ? '✓ API key saved.' : 'No API key saved yet.'}</p>
 
@@ -605,25 +471,45 @@ Rules:
   <!-- Chat messages -->
   <section class="chat" bind:this={messagesContainer}>
     {#if displayMessages.length === 0}
-      <p class="empty">Ask Claude to do anything in your Figma document.<br />Examples:<br />• "Create a button component"<br />• "What's selected right now?"<br />• "Add auto layout to this frame"</p>
+      <p class="empty">
+        Ask Claude to do anything in your Figma document.<br />Examples:<br />• "Create a button
+        component"<br />• "What's selected right now?"<br />• "Add auto layout to this frame"
+      </p>
     {:else}
       {#each displayMessages as msg}
         {#if msg.role === 'tool'}
-          <div class="tool-call" class:running={msg.toolStatus === 'running'} class:done={msg.toolStatus === 'done'}>
+          <div
+            class="tool-call"
+            class:running={msg.toolStatus === 'running'}
+            class:done={msg.toolStatus === 'done'}
+          >
             <span class="tool-icon">{msg.toolStatus === 'running' ? '⟳' : '✓'}</span>
             <span class="tool-name">{msg.text}</span>
           </div>
         {:else if msg.role === 'code'}
-          <div class="code-block">
-            <div class="code-header">
+          <details class="code-block">
+            <summary class="code-header">
               <span>JavaScript</span>
-            </div>
+              <span class="code-toggle-hint">show</span>
+            </summary>
             <pre class="code-body">{msg.text}</pre>
-          </div>
+          </details>
         {:else}
           <div class="message {msg.role}">
             <p class="meta">{msg.role === 'user' ? 'You' : 'Claude'}</p>
-            <p class="body">{msg.text}</p>
+            {#each splitCodeBlocks(msg.text) as part}
+              {#if part.type === 'code'}
+                <details class="code-block inline-code-block">
+                  <summary class="code-header">
+                    <span>{part.lang || 'code'}</span>
+                    <span class="code-toggle-hint">show</span>
+                  </summary>
+                  <pre class="code-body">{part.text}</pre>
+                </details>
+              {:else}
+                <p class="body">{part.text}</p>
+              {/if}
+            {/each}
           </div>
         {/if}
       {/each}
@@ -662,6 +548,28 @@ Rules:
     background: #2c2c2c;
     color: white;
     font-family: 'Inter', sans-serif;
+  }
+
+  :global(::-webkit-scrollbar) {
+    width: 4px;
+    height: 4px;
+  }
+
+  :global(::-webkit-scrollbar-track) {
+    background: transparent;
+  }
+
+  :global(::-webkit-scrollbar-thumb) {
+    background: rgba(255, 255, 255, 0);
+    border-radius: 2px;
+  }
+
+  :global(::-webkit-scrollbar-thumb:hover) {
+    background: rgba(255, 255, 255, 0);
+  }
+
+  :global(::-webkit-scrollbar-corner) {
+    background: transparent;
   }
 
   main {
@@ -786,6 +694,10 @@ Rules:
   }
 
   /* Code block */
+  .inline-code-block {
+    margin-top: 4px;
+  }
+
   .code-block {
     border-radius: 8px;
     overflow: hidden;
@@ -803,6 +715,22 @@ Rules:
     font-size: 10px;
     opacity: 0.6;
     font-family: monospace;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
+
+  .code-header::-webkit-details-marker {
+    display: none;
+  }
+
+  .code-toggle-hint {
+    font-size: 10px;
+    opacity: 0.5;
+  }
+
+  .code-block[open] .code-toggle-hint {
+    display: none;
   }
 
   .code-body {
@@ -851,7 +779,9 @@ Rules:
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .tool-name {
@@ -875,12 +805,24 @@ Rules:
     animation: bounce 1.2s infinite ease-in-out;
   }
 
-  .dot:nth-child(2) { animation-delay: 0.2s; }
-  .dot:nth-child(3) { animation-delay: 0.4s; }
+  .dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
 
   @keyframes bounce {
-    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-    40% { transform: scale(1); opacity: 1; }
+    0%,
+    80%,
+    100% {
+      transform: scale(0.6);
+      opacity: 0.4;
+    }
+    40% {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
 
   /* Status */
