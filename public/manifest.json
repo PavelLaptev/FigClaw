@@ -1,0 +1,14 @@
+{
+  "id": "paste-your-id-here",
+  "name": "Claude Chat Plugin",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "index.html",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["https://api.anthropic.com"]
+  }
+}

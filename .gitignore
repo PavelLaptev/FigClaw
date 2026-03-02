@@ -1,0 +1,10 @@
+# Node
+*.log
+*.log.*
+node_modules
+pnpm-lock.yaml
+
+public/build
+public/code.js
+public/index.html
+
