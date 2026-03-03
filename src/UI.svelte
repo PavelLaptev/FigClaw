@@ -1,8 +1,10 @@
 <script lang="ts">
   import './styles.css';
   import { tick } from 'svelte';
-  import Header from './components/Header.svelte';
+  import Header, { type Tab } from './components/Header.svelte';
+  import History from './components/History.svelte';
   import Settings from './components/Settings.svelte';
+  import Skills, { type Skill } from './components/Skills.svelte';
   import ChatMessage from './components/ChatMessage.svelte';
   import Composer, { type AttachedImage } from './components/Composer.svelte';
 
@@ -26,6 +28,22 @@
     toolStatus?: 'running' | 'done' | 'error';
   };
 
+  type SavedChat = {
+    id: string;
+    title: string;
+    savedAt: number;
+    displayMessages: DisplayMessage[];
+    apiHistory: ApiMessage[];
+  };
+
+  // ─── Helpers (defined early so $state initializers can use them) ──────────
+  function makeId(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
+  }
+
   // ─── State ────────────────────────────────────────────────────────────────
   let apiKeyInput = $state('');
   let hasApiKey = $state(false);
@@ -34,12 +52,16 @@
   let prompt = $state('');
   let attachedImages = $state<AttachedImage[]>([]);
   let isSending = $state(false);
-  let showSettings = $state(false);
+  let activeTab = $state<Tab>('chat');
+
+  let skills = $state<Skill[]>([]);
 
   let displayMessages = $state<DisplayMessage[]>([]);
   let apiHistory = $state<ApiMessage[]>([]);
+  let savedChats = $state<SavedChat[]>([]);
+  let currentChatId = $state<string>(makeId());
 
-  let messagesContainer: HTMLElement | null = null;
+  let messagesContainer = $state<HTMLElement | null>(null);
 
   // ─── Tool definitions sent to Claude ─────────────────────────────────────
   const TOOLS = [
@@ -239,6 +261,19 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
 - Keep responses concise. Show code, run it, report the outcome.
 - **Always use an explicit \`return\` statement when reading a value** (e.g. \`return figma.currentPage.name\`). Code without \`return\` always yields \`{ ok: true }\` — never state a value you haven't seen in the tool result.`;
 
+  // ─── Default skill (built-in system prompt) ─────────────────────────────
+  const DEFAULT_SKILL: Skill = {
+    id: '__default__',
+    name: 'Figma Agent',
+    content: SYSTEM_PROMPT,
+    fileName: 'system-prompt.md',
+    addedAt: 0,
+    isDefault: true,
+  };
+
+  // All skills shown in the UI: default first, then user-added
+  let allSkills = $derived([DEFAULT_SKILL, ...skills]);
+
   // ─── Helpers ──────────────────────────────────────────────────────────────
   function sendToPlugin(msg: Record<string, unknown>) {
     parent.postMessage({ pluginMessage: msg }, '*');
@@ -287,6 +322,15 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
     });
   }
 
+  // ─── Build system prompt (base + injected custom skills) ─────────────────
+  function buildSystemPrompt(): string {
+    if (skills.length === 0) return SYSTEM_PROMPT;
+    const skillsSection = skills
+      .map((s) => `### Skill: ${s.name}\n\n${s.content}`)
+      .join('\n\n---\n\n');
+    return `${SYSTEM_PROMPT}\n\n## Custom Skills\n\nThe user has provided the following custom skill documents. Use them as additional context and instructions:\n\n${skillsSection}`;
+  }
+
   // ─── Claude API call (fetch lives here in the iframe — no CORS issue) ─────
   async function callClaude(
     history: ApiMessage[]
@@ -302,7 +346,7 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
       body: JSON.stringify({
         model,
         max_tokens: 4096,
-        system: SYSTEM_PROMPT,
+        system: buildSystemPrompt(),
         tools: TOOLS,
         messages: history,
       }),
@@ -326,7 +370,7 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
   }
 
   // ─── Agent loop ───────────────────────────────────────────────────────────
-  let storedApiKey = '';
+  let storedApiKey = $state('');
 
   async function runAgentLoop(userText: string, images: AttachedImage[] = []) {
     if (!storedApiKey) {
@@ -444,6 +488,7 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
 
       apiHistory = history;
       statusMessage = 'Done.';
+      upsertCurrentChat();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       statusMessage = 'Error: ' + msg;
@@ -462,10 +507,69 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
     await runAgentLoop(text, images);
   }
 
+  function persistHistory(chats: SavedChat[]) {
+    // Svelte rune state can contain proxy-wrapped objects that are not postMessage-cloneable.
+    // Force plain JSON-serializable data before crossing iframe boundary.
+    const serializableChats = JSON.parse(JSON.stringify(chats)) as SavedChat[];
+    sendToPlugin({ type: 'save-chat-history', chats: serializableChats });
+  }
+
+  // Upsert the active conversation into savedChats in-place
+  function upsertCurrentChat() {
+    if (displayMessages.length === 0) return;
+    const firstUser = displayMessages.find((m) => m.role === 'user');
+    const title = firstUser ? firstUser.text.trim().slice(0, 60) || 'Chat' : 'Chat';
+    const chat: SavedChat = {
+      id: currentChatId,
+      title,
+      savedAt: Date.now(),
+      displayMessages: [...displayMessages],
+      apiHistory: [...apiHistory],
+    };
+    const exists = savedChats.some((c) => c.id === currentChatId);
+    const updated = exists
+      ? savedChats.map((c) => (c.id === currentChatId ? chat : c))
+      : [chat, ...savedChats];
+    savedChats = updated;
+    persistHistory(updated);
+  }
+
   function clearChat() {
+    // Don't save an empty chat
+    if (displayMessages.length > 0) upsertCurrentChat();
     displayMessages = [];
     apiHistory = [];
     statusMessage = '';
+    currentChatId = makeId();
+  }
+
+  function resumeChat(chat: SavedChat) {
+    if (displayMessages.length > 0) upsertCurrentChat();
+    savedChats = savedChats.filter((c) => c.id !== chat.id);
+    persistHistory(savedChats);
+    displayMessages = [...chat.displayMessages];
+    apiHistory = [...chat.apiHistory];
+    currentChatId = chat.id;
+    statusMessage = '';
+    activeTab = 'chat';
+    scrollBottom();
+  }
+
+  function deleteChat(id: string) {
+    const updated = savedChats.filter((c) => c.id !== id);
+    savedChats = updated;
+    persistHistory(updated);
+  }
+
+  // ─── Skills ───────────────────────────────────────────────────────────────
+  function addSkill(skill: Skill) {
+    skills = [...skills, skill];
+    sendToPlugin({ type: 'save-skills', skills });
+  }
+
+  function removeSkill(id: string) {
+    skills = skills.filter((s) => s.id !== id);
+    sendToPlugin({ type: 'save-skills', skills });
   }
 
   // ─── Plugin message handler ───────────────────────────────────────────────
@@ -476,8 +580,21 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
     if (msg.type === 'init') {
       hasApiKey = Boolean(msg.hasApiKey);
       statusMessage = hasApiKey ? 'Ready.' : 'Add your Claude API key to start.';
-      if (hasApiKey) {
-        sendToPlugin({ type: 'get-api-key' });
+      if (msg.apiKey) {
+        storedApiKey = String(msg.apiKey);
+      }
+      if (Array.isArray(msg.skills)) {
+        skills = msg.skills as Skill[];
+      }
+      if (Array.isArray(msg.chatHistory)) {
+        savedChats = msg.chatHistory as SavedChat[];
+      }
+      return;
+    }
+
+    if (msg.type === 'skills-value') {
+      if (Array.isArray(msg.skills)) {
+        skills = msg.skills as Skill[];
       }
       return;
     }
@@ -519,41 +636,46 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
 </script>
 
 <main class="plugin">
-  <Header onClear={clearChat} onToggleSettings={() => (showSettings = !showSettings)} />
+  <Header bind:activeTab onClear={clearChat} />
 
-  {#if showSettings}
+  {#if activeTab === 'settings'}
     <Settings
       bind:apiKeyInput
       bind:model
       {hasApiKey}
+      keyLoaded={Boolean(storedApiKey)}
       onSave={() => sendToPlugin({ type: 'save-api-key', apiKey: apiKeyInput })}
     />
-  {/if}
-
-  <!-- Chat messages -->
-  <section class="chat" bind:this={messagesContainer}>
-    {#if displayMessages.length === 0}
-      <p class="empty">
-        Ask Claude to do anything in your Figma document.<br />Examples:<br />• "Create a button
-        component"<br />• "What's selected right now?"<br />• "Add auto layout to this frame"
-      </p>
-    {:else}
-      {#each displayMessages as msg}
-        <ChatMessage {msg} />
-      {/each}
-      {#if isSending}
-        <div class="thinking">
-          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-        </div>
+  {:else if activeTab === 'skills'}
+    <Skills skills={allSkills} onAdd={addSkill} onRemove={removeSkill} />
+  {:else if activeTab === 'history'}
+    <History {savedChats} onResume={resumeChat} onDelete={deleteChat} />
+  {:else}
+    <!-- Chat messages -->
+    <section class="chat" bind:this={messagesContainer}>
+      {#if displayMessages.length === 0}
+        <p class="empty">
+          Ask Claude to do anything in your Figma document.<br />Examples:<br />• "Create a button
+          component"<br />• "What's selected right now?"<br />• "Add auto layout to this frame"
+        </p>
+      {:else}
+        {#each displayMessages as msg}
+          <ChatMessage {msg} />
+        {/each}
+        {#if isSending}
+          <div class="thinking">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          </div>
+        {/if}
       {/if}
+    </section>
+
+    {#if statusMessage}
+      <p class="status">{statusMessage}</p>
     {/if}
-  </section>
 
-  {#if statusMessage}
-    <p class="status">{statusMessage}</p>
+    <Composer bind:prompt bind:attachedImages {isSending} onSend={sendMessage} />
   {/if}
-
-  <Composer bind:prompt bind:attachedImages {isSending} onSend={sendMessage} />
 </main>
 
 <style>

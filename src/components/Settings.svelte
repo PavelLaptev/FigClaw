@@ -3,11 +3,13 @@
     apiKeyInput = $bindable(''),
     model = $bindable(''),
     hasApiKey,
+    keyLoaded,
     onSave,
   }: {
     apiKeyInput: string;
     model: string;
     hasApiKey: boolean;
+    keyLoaded: boolean;
     onSave: () => void;
   } = $props();
 </script>
@@ -18,7 +20,12 @@
     <input id="api-key" type="password" bind:value={apiKeyInput} placeholder="sk-ant-..." />
     <button class="save-btn" onclick={onSave}>Save</button>
   </div>
-  <p class="hint">{hasApiKey ? '✓ API key saved.' : 'No API key saved yet.'}</p>
+  <div class="status-badge" class:saved={hasApiKey} class:missing={!hasApiKey}>
+    {hasApiKey ? '✓ Saved in storage' : '✗ Not saved in storage'}
+  </div>
+  <div class="status-badge" class:saved={keyLoaded} class:missing={!keyLoaded}>
+    {keyLoaded ? '✓ Key loaded in session' : '✗ Key not loaded in session'}
+  </div>
 
   <label for="model">Model</label>
   <input id="model" type="text" bind:value={model} placeholder="claude-sonnet-4-5" />
@@ -46,10 +53,27 @@
     margin: 0;
   }
 
-  .hint {
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
     font-size: 11px;
-    opacity: 0.6;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
+    width: fit-content;
     margin: 0;
+  }
+
+  .status-badge.saved {
+    background: rgba(74, 222, 128, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(74, 222, 128, 0.3);
+  }
+
+  .status-badge.missing {
+    background: rgba(251, 146, 60, 0.15);
+    color: #fb923c;
+    border: 1px solid rgba(251, 146, 60, 0.3);
   }
 
   input {

@@ -1,12 +1,22 @@
 // ─── Constants ────────────────────────────────────────────────────────────────
 const STORAGE_KEY_API = 'claude_api_key';
+const STORAGE_KEY_SKILLS = 'claude_skills';
+const STORAGE_KEY_HISTORY = 'claude_chat_history';
 
 figma.showUI(__html__, { themeColors: true, width: 420, height: 680 });
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function postInitState() {
   const apiKey = await figma.clientStorage.getAsync(STORAGE_KEY_API);
-  figma.ui.postMessage({ type: 'init', hasApiKey: Boolean(apiKey) });
+  const skills = await getSkills();
+  const chatHistory = await getChatHistory();
+  figma.ui.postMessage({
+    type: 'init',
+    hasApiKey: Boolean(apiKey),
+    apiKey: apiKey ? String(apiKey) : '',
+    skills,
+    chatHistory,
+  });
 }
 
 async function saveApiKey(apiKey: string) {
@@ -23,6 +33,77 @@ async function saveApiKey(apiKey: string) {
 async function getApiKey(): Promise<string | null> {
   const key = await figma.clientStorage.getAsync(STORAGE_KEY_API);
   return key ? String(key) : null;
+}
+
+// ─── Skills storage ───────────────────────────────────────────────────────────
+async function getSkills(): Promise<unknown[]> {
+  const raw = await figma.clientStorage.getAsync(STORAGE_KEY_SKILLS);
+  if (!raw) return [];
+  try {
+    return Array.isArray(raw) ? raw : JSON.parse(String(raw));
+  } catch (_e) {
+    return [];
+  }
+}
+
+async function saveSkills(skills: unknown[]): Promise<void> {
+  await figma.clientStorage.setAsync(STORAGE_KEY_SKILLS, skills);
+}
+
+// ─── Chat history storage ─────────────────────────────────────────────────────
+async function getChatHistory(): Promise<unknown[]> {
+  const raw = await figma.clientStorage.getAsync(STORAGE_KEY_HISTORY);
+  if (!raw) return [];
+  try {
+    return Array.isArray(raw) ? raw : JSON.parse(String(raw));
+  } catch (_e) {
+    return [];
+  }
+}
+
+async function saveChatHistory(chats: unknown[]): Promise<void> {
+  await figma.clientStorage.setAsync(STORAGE_KEY_HISTORY, chats);
+}
+
+type PluginMessage = { type: string; [key: string]: unknown };
+
+async function handleStorageMessage(msg: PluginMessage): Promise<boolean> {
+  if (msg.type === 'request-init') {
+    await postInitState();
+    return true;
+  }
+
+  if (msg.type === 'save-api-key') {
+    await saveApiKey(String(msg.apiKey || ''));
+    return true;
+  }
+
+  if (msg.type === 'get-api-key') {
+    const key = await getApiKey();
+    figma.ui.postMessage({ type: 'api-key-value', apiKey: key || '' });
+    return true;
+  }
+
+  if (msg.type === 'get-skills') {
+    const skills = await getSkills();
+    figma.ui.postMessage({ type: 'skills-value', skills: Array.isArray(skills) ? skills : [] });
+    return true;
+  }
+
+  if (msg.type === 'save-skills') {
+    const skills = Array.isArray(msg.skills) ? msg.skills : [];
+    await saveSkills(skills);
+    figma.ui.postMessage({ type: 'skills-saved' });
+    return true;
+  }
+
+  if (msg.type === 'save-chat-history') {
+    const chats = Array.isArray(msg.chats) ? msg.chats : [];
+    await saveChatHistory(chats);
+    return true;
+  }
+
+  return false;
 }
 
 // ─── Code runner ──────────────────────────────────────────────────────────────
@@ -142,21 +223,10 @@ async function executeTool(name: string, input: Record<string, unknown>): Promis
 }
 
 // ─── Message Handler ──────────────────────────────────────────────────────────
-figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
+figma.ui.onmessage = async (msg: PluginMessage) => {
   try {
-    if (msg.type === 'request-init') {
-      await postInitState();
-      return;
-    }
-
-    if (msg.type === 'save-api-key') {
-      await saveApiKey(String(msg.apiKey));
-      return;
-    }
-
-    if (msg.type === 'get-api-key') {
-      const key = await getApiKey();
-      figma.ui.postMessage({ type: 'api-key-value', apiKey: key || '' });
+    const handledStorage = await handleStorageMessage(msg);
+    if (handledStorage) {
       return;
     }
 
@@ -189,5 +259,3 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
     figma.ui.postMessage({ type: 'chat-error', error: errorMessage });
   }
 };
-
-postInitState();
