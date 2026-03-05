@@ -1,28 +1,37 @@
 <script lang="ts">
+  import Button from './Button.svelte';
+
   let {
     apiKeyInput = $bindable(''),
     model = $bindable(''),
     hasApiKey,
     keyLoaded,
     onSave,
+    onRemove,
   }: {
     apiKeyInput: string;
     model: string;
     hasApiKey: boolean;
     keyLoaded: boolean;
     onSave: () => void;
+    onRemove: () => void;
   } = $props();
 </script>
 
 <section class="settings">
   <label for="api-key">Claude API key</label>
-  <div class="row">
-    <input id="api-key" type="password" bind:value={apiKeyInput} placeholder="sk-ant-..." />
-    <button class="save-btn" onclick={onSave}>Save</button>
-  </div>
-  <div class="status-badge" class:saved={hasApiKey} class:missing={!hasApiKey}>
-    {hasApiKey ? '✓ Saved in storage' : '✗ Not saved in storage'}
-  </div>
+  {#if hasApiKey}
+    <div class="row">
+      <div class="status-badge saved">✓ Saved in storage</div>
+      <Button variant="ghost" onclick={onRemove}>Remove</Button>
+    </div>
+  {:else}
+    <div class="row">
+      <input id="api-key" type="password" bind:value={apiKeyInput} placeholder="sk-ant-..." />
+      <Button variant="ghost" onclick={onSave}>Save</Button>
+    </div>
+    <div class="status-badge missing">✗ Not saved in storage</div>
+  {/if}
   <div class="status-badge" class:saved={keyLoaded} class:missing={!keyLoaded}>
     {keyLoaded ? '✓ Key loaded in session' : '✗ Key not loaded in session'}
   </div>
@@ -36,7 +45,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--color-border-1);
     border-radius: 8px;
     padding: 10px;
     flex-shrink: 0;
@@ -65,49 +74,29 @@
   }
 
   .status-badge.saved {
-    background: rgba(74, 222, 128, 0.15);
-    color: #4ade80;
-    border: 1px solid rgba(74, 222, 128, 0.3);
+    background: var(--color-green-bg);
+    color: var(--color-green);
+    border: 1px solid var(--color-green-border);
   }
 
   .status-badge.missing {
-    background: rgba(251, 146, 60, 0.15);
-    color: #fb923c;
-    border: 1px solid rgba(251, 146, 60, 0.3);
+    background: var(--color-orange-bg);
+    color: var(--color-orange);
+    border: 1px solid var(--color-orange-border);
   }
 
   input {
-    box-sizing: border-box;
     width: 100%;
     border-radius: 6px;
     font-size: 13px;
     padding: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
+    border: 1px solid var(--color-border-2);
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
     outline: none;
   }
 
   input:focus {
-    border-color: rgba(255, 255, 255, 0.4);
-  }
-
-  .save-btn {
-    box-sizing: border-box;
-    width: auto;
-    flex-shrink: 0;
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    font-weight: 500;
-    white-space: nowrap;
-    border-radius: 6px;
-    font-size: 13px;
-    padding: 8px;
-  }
-
-  .save-btn:hover {
-    background: rgba(255, 255, 255, 0.18);
+    border-color: var(--color-border-3);
   }
 </style>

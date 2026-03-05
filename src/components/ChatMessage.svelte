@@ -81,13 +81,13 @@
   }
 
   .message.user {
-    background: rgba(255, 77, 77, 0.1);
+    background: var(--color-accent-bg);
     align-self: flex-end;
     max-width: 90%;
   }
 
   .message.assistant {
-    background: rgba(0, 229, 204, 0.08);
+    background: var(--color-teal-bg);
     align-self: flex-start;
     max-width: 95%;
   }
@@ -118,7 +118,7 @@
     max-height: 120px;
     border-radius: 6px;
     object-fit: cover;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--color-border-1);
     cursor: zoom-in;
   }
 
@@ -130,7 +130,7 @@
   .code-block {
     border-radius: 8px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--color-border-1);
     align-self: flex-start;
     width: 100%;
   }
@@ -139,7 +139,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--color-surface-1);
     padding: 4px 10px;
     font-size: 10px;
     opacity: 0.6;
@@ -165,13 +165,13 @@
   .code-body {
     margin: 0;
     padding: 10px;
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--color-overlay-30);
     font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
     font-size: 11px;
     line-height: 1.6;
     white-space: pre;
     overflow-x: auto;
-    color: #e2e8f0;
+    color: var(--color-text-secondary);
   }
 
   /* Tool call pill */
@@ -182,8 +182,8 @@
     font-size: 11px;
     padding: 4px 8px;
     border-radius: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-1);
     width: fit-content;
     opacity: 0.75;
   }

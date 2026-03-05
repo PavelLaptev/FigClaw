@@ -7,6 +7,7 @@
   import Skills, { type Skill } from './components/Skills.svelte';
   import ChatMessage from './components/ChatMessage.svelte';
   import Composer, { type AttachedImage } from './components/Composer.svelte';
+  import EmptyChat from './components/EmptyChat.svelte';
 
   // ─── Types ────────────────────────────────────────────────────────────────
   type ContentBlock =
@@ -579,7 +580,7 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
 
     if (msg.type === 'init') {
       hasApiKey = Boolean(msg.hasApiKey);
-      statusMessage = hasApiKey ? 'Ready.' : 'Add your Claude API key to start.';
+      statusMessage = !hasApiKey ? 'Claude is ready ✨' : 'Add your Claude API key to start 🔑';
       if (msg.apiKey) {
         storedApiKey = String(msg.apiKey);
       }
@@ -645,6 +646,7 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
       {hasApiKey}
       keyLoaded={Boolean(storedApiKey)}
       onSave={() => sendToPlugin({ type: 'save-api-key', apiKey: apiKeyInput })}
+      onRemove={() => sendToPlugin({ type: 'save-api-key', apiKey: '' })}
     />
   {:else if activeTab === 'skills'}
     <Skills skills={allSkills} onAdd={addSkill} onRemove={removeSkill} />
@@ -654,10 +656,7 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
     <!-- Chat messages -->
     <section class="chat" bind:this={messagesContainer}>
       {#if displayMessages.length === 0}
-        <p class="empty">
-          Ask Claude to do anything in your Figma document.<br />Examples:<br />• "Create a button
-          component"<br />• "What's selected right now?"<br />• "Add auto layout to this frame"
-        </p>
+        <EmptyChat />
       {:else}
         {#each displayMessages as msg}
           <ChatMessage {msg} />
@@ -679,43 +678,11 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
 </main>
 
 <style>
-  :global(body) {
-    margin: 0;
-    padding: 0;
-    background: #252525;
-    color: white;
-    font-family: 'Inter', sans-serif;
-  }
-
-  :global(::-webkit-scrollbar) {
-    width: 4px;
-    height: 4px;
-  }
-
-  :global(::-webkit-scrollbar-track) {
-    background: transparent;
-  }
-
-  :global(::-webkit-scrollbar-thumb) {
-    background: rgba(255, 255, 255, 0);
-    border-radius: 2px;
-  }
-
-  :global(::-webkit-scrollbar-thumb:hover) {
-    background: rgba(255, 255, 255, 0);
-  }
-
-  :global(::-webkit-scrollbar-corner) {
-    background: transparent;
-  }
-
   main {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    box-sizing: border-box;
-    padding: 10px;
-    gap: 8px;
+    overflow: hidden;
   }
 
   /* Chat */
@@ -725,16 +692,7 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 4px 0;
-  }
-
-  .empty {
-    font-size: 12px;
-    opacity: 0.5;
-    line-height: 1.7;
-    margin: auto;
-    text-align: center;
-    padding: 20px;
+    padding: 0;
   }
 
   /* Thinking dots */
@@ -775,8 +733,9 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
 
   /* Status */
   .status {
-    font-size: 11px;
-    opacity: 0.55;
+    padding: 4px 14px;
+    font-size: 12px;
+    opacity: 0.4;
     margin: 0;
     flex-shrink: 0;
     text-align: center;

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import Button from './Button.svelte';
+  import Icon from './Icon.svelte';
+
   export type Skill = {
     id: string;
     name: string;
@@ -149,12 +152,18 @@
           {/if}
         </span>
         <div class="item-actions">
-          <button class="action-btn" title="Preview" onclick={() => openPreview(skill)}>⊙</button>
-          <button class="action-btn" title="Download" onclick={() => downloadSkill(skill)}>↓</button
+          <Button variant="icon" title="Preview" onclick={() => openPreview(skill)}
+            ><Icon name="preview" /></Button
+          >
+          <Button variant="icon" title="Download" onclick={() => downloadSkill(skill)}
+            ><Icon name="download" /></Button
           >
           {#if !skill.isDefault}
-            <button class="action-btn remove-btn" title="Remove" onclick={() => onRemove(skill.id)}
-              >✕</button
+            <Button
+              variant="icon"
+              title="Remove"
+              class="remove-skill-btn"
+              onclick={() => onRemove(skill.id)}><Icon name="close" /></Button
             >
           {/if}
         </div>
@@ -168,10 +177,10 @@
       <div class="preview-header">
         <span class="preview-title">{previewSkill.name}</span>
         <div class="preview-actions">
-          <button class="action-btn" title="Download" onclick={() => downloadSkill(previewSkill!)}
-            >↓</button
+          <Button variant="icon" title="Download" onclick={() => downloadSkill(previewSkill!)}
+            ><Icon name="download" /></Button
           >
-          <button class="action-btn" title="Close" onclick={closePreview}>✕</button>
+          <Button variant="icon" title="Close" onclick={closePreview}><Icon name="close" /></Button>
         </div>
       </div>
       <pre class="preview-body">{previewSkill.content}</pre>
@@ -194,7 +203,7 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    border: 1px dashed rgba(255, 255, 255, 0.25);
+    border: 1px dashed var(--color-border-2);
     border-radius: 8px;
     padding: 20px 12px;
     cursor: pointer;
@@ -207,8 +216,8 @@
 
   .drop-zone:hover,
   .drop-zone.dragging {
-    border-color: rgba(255, 255, 255, 0.6);
-    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--color-border-3);
+    background: var(--color-surface-1);
   }
 
   .drop-icon {
@@ -228,7 +237,7 @@
 
   .error {
     font-size: 11px;
-    color: #ff6b6b;
+    color: var(--color-accent-hover);
     margin: 0;
   }
 
@@ -258,16 +267,16 @@
     grid-template-rows: auto auto;
     align-items: center;
     gap: 2px 8px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-1);
     border-radius: 6px;
     padding: 8px 10px;
     position: relative;
   }
 
   .default-skill {
-    border-color: rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--color-border-2);
+    background: var(--color-surface-1);
   }
 
   .badge {
@@ -276,7 +285,7 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
     opacity: 0.45;
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid var(--color-border-2);
     border-radius: 3px;
     padding: 1px 4px;
     flex-shrink: 0;
@@ -313,34 +322,14 @@
     gap: 2px;
   }
 
-  .action-btn {
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.35);
-    cursor: pointer;
-    font-size: 13px;
-    padding: 4px 5px;
-    border-radius: 4px;
-    width: auto;
-    line-height: 1;
-    transition:
-      color 0.1s,
-      background 0.1s;
-  }
-
-  .action-btn:hover {
-    color: white;
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .remove-btn:hover {
-    color: #ff6b6b;
+  :global(.remove-skill-btn:hover) {
+    color: var(--color-accent-hover) !important;
   }
 
   .preview {
     display: flex;
     flex-direction: column;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--color-border-1);
     border-radius: 8px;
     overflow: hidden;
     flex-shrink: 0;
@@ -352,8 +341,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 6px 10px;
-    background: rgba(255, 255, 255, 0.06);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--color-surface-1);
+    border-bottom: 1px solid var(--color-border-1);
     flex-shrink: 0;
   }
 

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import Button from './Button.svelte';
+  import Icon from './Icon.svelte';
+
   export type AttachedImage = { dataUrl: string; mediaType: string; name: string };
 
   let {
@@ -55,83 +58,80 @@
   }
 </script>
 
-<section class="composer">
-  {#if attachedImages.length > 0}
-    <div class="image-strip">
-      {#each attachedImages as img, i}
-        <div class="image-thumb">
-          <img src={img.dataUrl} alt={img.name} />
-          <button class="remove-btn" onclick={() => removeImage(i)} title="Remove">✕</button>
-        </div>
-      {/each}
-    </div>
-  {/if}
+<div class="composer-wrapper">
+  <section class="composer">
+    {#if attachedImages.length > 0}
+      <div class="image-strip">
+        {#each attachedImages as img, i}
+          <div class="image-thumb">
+            <img src={img.dataUrl} alt={img.name} />
+            <Button variant="outline" onclick={() => removeImage(i)} title="Remove"
+              ><Icon name="close" /></Button
+            >
+          </div>
+        {/each}
+      </div>
+    {/if}
 
-  <div class="input-row">
     <textarea
       bind:value={prompt}
       onkeydown={handleKeydown}
       onpaste={handlePaste}
       rows="3"
-      placeholder="Ask Claude to do something in Figma… (⌘↵ to send)"
+      placeholder="Ask Claude to do something in Figma…"
       disabled={isSending}
     ></textarea>
-  </div>
 
-  <div class="actions">
-    <button
-      class="attach-btn"
-      onclick={() => fileInput?.click()}
-      disabled={isSending}
-      title="Attach image"
-    >
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
+    <div class="divider"></div>
+
+    <div class="actions-row">
+      <Button
+        onclick={() => fileInput?.click()}
+        disabled={isSending}
+        title="Attach image"
+        variant="outline"
       >
-        <rect
-          x="1"
-          y="3"
-          width="14"
-          height="10"
-          rx="1.5"
-          stroke="currentColor"
-          stroke-width="1.2"
-          fill="none"
-        />
-        <circle cx="5.5" cy="6.5" r="1.5" fill="currentColor" />
-        <path
-          d="M1 11l3.5-3.5 2.5 2.5 2.5-2.5L15 11"
-          stroke="currentColor"
-          stroke-width="1.2"
-          stroke-linejoin="round"
-          fill="none"
-        />
-      </svg>
-    </button>
-    <input
-      bind:this={fileInput}
-      type="file"
-      accept="image/*"
-      multiple
-      style="display:none"
-      onchange={handleFileChange}
-    />
-    <button class="send-btn" onclick={onSend} disabled={isSending}>
-      {isSending ? 'Working...' : 'Send'}
-    </button>
-  </div>
-</section>
+        <Icon name="image" />
+      </Button>
+      <input
+        bind:this={fileInput}
+        type="file"
+        accept="image/*"
+        multiple
+        style="display:none"
+        onchange={handleFileChange}
+      />
+      <Button variant="primary" onclick={onSend} disabled={isSending}>
+        {isSending ? 'Working...' : 'Send'}
+        <Icon name="plus" />
+      </Button>
+    </div>
+  </section>
+</div>
 
 <style>
+  .composer-wrapper {
+    padding: 12px;
+  }
+
   .composer {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
     flex-shrink: 0;
+    border: 1px solid var(--color-border-1);
+    border-radius: 10px;
+    background: var(--color-surface-1);
+    padding: 12px;
+    transition:
+      border-color 0.15s,
+      transform 0.15s;
+
+    &:focus-within,
+    &:hover {
+      border-color: var(--color-border-2);
+      transform: translateY(-1px);
+    }
   }
 
   .image-strip {
@@ -146,7 +146,7 @@
     height: 56px;
     border-radius: 6px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid var(--color-border-2);
     flex-shrink: 0;
   }
 
@@ -157,101 +157,40 @@
     display: block;
   }
 
-  .remove-btn {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-size: 9px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    line-height: 1;
-  }
-
-  .input-row {
-    display: flex;
-    gap: 6px;
-  }
-
   textarea {
-    box-sizing: border-box;
     width: 100%;
-    border-radius: 6px;
-    font-size: 13px;
-    padding: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
+    border-radius: 0;
+    font-size: 14px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(---color-text-primary);
     outline: none;
     resize: none;
-    line-height: 1.5;
-    min-height: 60px;
+    line-height: 1.4;
+    min-height: 96px;
   }
 
-  textarea:focus {
-    border-color: rgba(255, 255, 255, 0.4);
+  textarea::placeholder {
+    color: var(---color-text-primary);
+    opacity: 0.2;
   }
 
   textarea:disabled {
     opacity: 0.5;
   }
 
-  .actions {
-    display: flex;
-    gap: 6px;
+  .divider {
+    width: 100%;
+    border-top: 1px solid var(--color-border-1);
   }
 
-  .attach-btn {
-    box-sizing: border-box;
-    border-radius: 6px;
-    padding: 0 10px;
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+  .actions-row {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .attach-btn:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  .attach-btn:not(:disabled):hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
-  }
-
-  .send-btn {
-    box-sizing: border-box;
-    flex: 1;
-    border-radius: 6px;
-    font-size: 13px;
-    padding: 8px;
-    cursor: pointer;
-    background: #ff4d4d;
-    color: #fff;
-    border: none;
-    font-weight: 600;
-  }
-
-  .send-btn:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  .send-btn:not(:disabled):hover {
-    background: #ff6b6b;
+    gap: 8px;
   }
 </style>

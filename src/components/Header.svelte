@@ -1,4 +1,7 @@
 <script lang="ts">
+  import Button from './Button.svelte';
+  import Icon from './Icon.svelte';
+
   export type Tab = 'chat' | 'skills' | 'settings' | 'history';
 
   let {
@@ -11,7 +14,7 @@
 </script>
 
 <header>
-  <nav class="tabs">
+  <nav class="tabs-shell">
     <button class="tab-btn" class:active={activeTab === 'chat'} onclick={() => (activeTab = 'chat')}
       >Chat</button
     >
@@ -33,7 +36,7 @@
   </nav>
   <div class="header-actions">
     {#if activeTab === 'chat'}
-      <button class="icon-btn" onclick={onClear} title="New chat">+</button>
+      <Button onclick={onClear} title="New chat"><Icon name="plus" /></Button>
     {/if}
   </div>
 </header>
@@ -44,36 +47,38 @@
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
+    min-height: 40px;
   }
 
-  .tabs {
+  .tabs-shell {
     display: flex;
-    gap: 2px;
+    gap: 4px;
+    border: 1px solid var(--color-border-2);
+    border-radius: 14px;
+    padding: 3px;
+    background: var(--color-surface-1);
   }
 
   .tab-btn {
-    background: transparent;
+    color: var(--color-text-tertiary);
     border: none;
-    color: rgba(255, 255, 255, 0.45);
-    cursor: pointer;
-    font-size: 13px;
+    background: transparent;
+    padding: 4px 12px;
+    border-radius: 10px;
+    font-size: 14px;
     font-weight: 500;
-    padding: 4px 8px;
-    border-radius: 6px;
-    width: auto;
-    transition:
-      color 0.15s,
-      background 0.15s;
+    cursor: pointer;
+    line-height: 1.2;
   }
 
   .tab-btn:hover {
-    color: rgba(255, 255, 255, 0.8);
-    background: rgba(255, 255, 255, 0.07);
+    color: var(--color-text-secondary);
+    background: var(--color-surface-1);
   }
 
   .tab-btn.active {
-    color: white;
-    background: rgba(255, 255, 255, 0.12);
+    color: var(--color-text-primary);
+    background: var(--color-surface-3);
   }
 
   .header-actions {
@@ -81,19 +86,22 @@
     gap: 4px;
   }
 
-  .icon-btn {
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.6);
-    cursor: pointer;
-    font-size: 14px;
-    padding: 4px 6px;
-    border-radius: 4px;
-    width: auto;
+  :global(.new-chat-btn.btn) {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px;
+    border-radius: 10px !important;
+    border: 1px solid var(--color-border-2) !important;
+    background: transparent !important;
+    color: var(--color-text-secondary) !important;
+    font-size: 26px !important;
+    font-weight: 400 !important;
+    line-height: 1 !important;
+    padding: 0 !important;
   }
 
-  .icon-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+  :global(.new-chat-btn.btn:hover) {
+    background: var(--color-surface-1) !important;
+    color: var(--color-text-primary) !important;
   }
 </style>

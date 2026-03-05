@@ -16,11 +16,10 @@
   input {
     padding: 6px;
     font-size: 14px;
-    border: 1px solid #ccc;
-    color: white;
+    border: 1px solid var(--color-border-3);
+    color: var(--color-text-primary);
     border-radius: 4px;
     background: none;
     width: 100%;
-    box-sizing: border-box;
   }
 </style>

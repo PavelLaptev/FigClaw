@@ -1,4 +1,7 @@
 <script lang="ts">
+  import Button from './Button.svelte';
+  import Icon from './Icon.svelte';
+
   type DisplayMessage = {
     role: 'user' | 'assistant' | 'tool' | 'code';
     text: string;
@@ -59,11 +62,13 @@
     <ul class="list">
       {#each savedChats as chat (chat.id)}
         <li class="item">
-          <button class="resume-btn" on:click={() => onResume(chat)}>
+          <Button variant="ghost" onclick={() => onResume(chat)} class="resume-btn">
             <span class="title">{chat.title}</span>
             <span class="meta">{formatDate(chat.savedAt)} · {msgCount(chat)} messages</span>
-          </button>
-          <button class="delete-btn" title="Delete" on:click={() => onDelete(chat.id)}>✕</button>
+          </Button>
+          <Button variant="icon" onclick={() => onDelete(chat.id)} title="Delete" class="delete-btn"
+            ><Icon name="close" /></Button
+          >
         </li>
       {/each}
     </ul>
@@ -82,7 +87,7 @@
   h3 {
     margin: 0;
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--color-text-tertiary);
     font-weight: 500;
   }
 
@@ -110,24 +115,21 @@
     gap: 4px;
   }
 
-  .resume-btn {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    background: rgba(255, 255, 255, 0.05);
-    border: none;
-    border-radius: 8px;
-    padding: 8px 10px;
-    cursor: pointer;
-    text-align: left;
-    transition: background 0.15s;
-    min-width: 0;
+  :global(.resume-btn) {
+    flex: 1 !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px !important;
+    background: var(--color-surface-1) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+    text-align: left !important;
+    min-width: 0 !important;
   }
 
-  .resume-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+  :global(.resume-btn:hover) {
+    background: var(--color-surface-2) !important;
   }
 
   .title {
@@ -141,25 +143,18 @@
 
   .meta {
     font-size: 10px;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--color-text-tertiary);
   }
 
-  .delete-btn {
-    flex-shrink: 0;
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.3);
-    cursor: pointer;
-    font-size: 11px;
-    padding: 6px;
-    border-radius: 6px;
-    transition:
-      color 0.15s,
-      background 0.15s;
+  :global(.delete-btn) {
+    flex-shrink: 0 !important;
+    color: var(--color-text-tertiary) !important;
+    font-size: 11px !important;
+    padding: 6px !important;
   }
 
-  .delete-btn:hover {
-    color: white;
-    background: rgba(255, 255, 255, 0.08);
+  :global(.delete-btn:hover) {
+    color: var(--color-text-primary) !important;
+    background: var(--color-surface-2) !important;
   }
 </style>
