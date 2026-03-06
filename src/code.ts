@@ -3,7 +3,7 @@ const STORAGE_KEY_API = 'claude_api_key';
 const STORAGE_KEY_SKILLS = 'claude_skills';
 const STORAGE_KEY_HISTORY = 'claude_chat_history';
 
-figma.showUI(__html__, { themeColors: true, width: 420, height: 680 });
+figma.showUI(__html__, { themeColors: true, width: 400, height: 680 });
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function postInitState() {
@@ -23,11 +23,15 @@ async function saveApiKey(apiKey: string) {
   const trimmed = apiKey.trim();
   if (!trimmed) {
     await figma.clientStorage.deleteAsync(STORAGE_KEY_API);
-    figma.ui.postMessage({ type: 'api-key-saved', hasApiKey: false, message: 'API key cleared.' });
+    figma.ui.postMessage({
+      type: 'api-key-saved',
+      hasApiKey: false,
+      message: 'API key cleared 🧽',
+    });
     return;
   }
   await figma.clientStorage.setAsync(STORAGE_KEY_API, trimmed);
-  figma.ui.postMessage({ type: 'api-key-saved', hasApiKey: true, message: 'API key saved.' });
+  figma.ui.postMessage({ type: 'api-key-saved', hasApiKey: true, message: 'API key saved ✅' });
 }
 
 async function getApiKey(): Promise<string | null> {

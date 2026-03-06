@@ -213,8 +213,9 @@
     line-height: 1.5;
     text-align: center;
     padding: 20px;
+
     opacity: 0;
-    animation: fade-up 0.5s ease forwards 0.55s;
+    animation: fade-up 0.3s ease forwards;
   }
 
   @keyframes fade-up {
@@ -223,7 +224,7 @@
       transform: translateY(6px);
     }
     to {
-      opacity: 1;
+      opacity: 0.6;
       transform: translateY(0);
     }
   }

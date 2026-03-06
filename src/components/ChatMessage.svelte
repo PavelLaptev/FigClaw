@@ -39,17 +39,11 @@
     <span class="tool-icon">{msg.toolStatus === 'running' ? '⟳' : '✓'}</span>
     <span class="tool-name">{msg.text}</span>
   </div>
-{:else if msg.role === 'code'}
-  <details class="code-block">
-    <summary class="code-header">
-      <span>JavaScript</span>
-      <span class="code-toggle-hint">show</span>
-    </summary>
-    <pre class="code-body">{msg.text}</pre>
-  </details>
 {:else}
   <div class="message {msg.role}">
-    <p class="meta">{msg.role === 'user' ? 'You' : 'Claude'}</p>
+    {#if msg.role === 'assistant'}
+      <p class="meta">Claude</p>
+    {/if}
     {#if msg.images && msg.images.length > 0}
       <div class="image-grid">
         {#each msg.images as src}
@@ -75,7 +69,7 @@
 
 <style>
   .message {
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     padding: 8px 10px;
     line-height: 1.5;
   }
@@ -87,7 +81,7 @@
   }
 
   .message.assistant {
-    background: var(--color-teal-bg);
+    background: var(--color-surface-1);
     align-self: flex-start;
     max-width: 95%;
   }
@@ -116,7 +110,7 @@
   .attached-img {
     max-width: 120px;
     max-height: 120px;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     object-fit: cover;
     border: 1px solid var(--color-border-1);
     cursor: zoom-in;
@@ -128,11 +122,15 @@
   }
 
   .code-block {
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     overflow: hidden;
-    border: 1px solid var(--color-border-1);
+    border: 1px solid transparent;
     align-self: flex-start;
     width: 100%;
+  }
+
+  .code-block[open] {
+    border-color: var(--color-border-1);
   }
 
   .code-header {
@@ -147,6 +145,7 @@
     cursor: pointer;
     list-style: none;
     user-select: none;
+    border: none;
   }
 
   .code-header::-webkit-details-marker {
@@ -181,7 +180,7 @@
     gap: 6px;
     font-size: 11px;
     padding: 4px 8px;
-    border-radius: 20px;
+    border-radius: var(--radius-pill);
     background: var(--color-surface-1);
     border: 1px solid var(--color-border-1);
     width: fit-content;

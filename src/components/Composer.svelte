@@ -103,7 +103,9 @@
       />
       <Button variant="primary" onclick={onSend} disabled={isSending}>
         {isSending ? 'Working...' : 'Send'}
-        <Icon name="plus" />
+        {#if !isSending}
+          <Icon name="arrow-up" />
+        {/if}
       </Button>
     </div>
   </section>
@@ -112,15 +114,16 @@
 <style>
   .composer-wrapper {
     padding: 12px;
+    padding-top: 0;
   }
 
   .composer {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     flex-shrink: 0;
     border: 1px solid var(--color-border-1);
-    border-radius: 10px;
+    border-radius: var(--radius-lg);
     background: var(--color-surface-1);
     padding: 12px;
     transition:
@@ -144,7 +147,7 @@
     position: relative;
     width: 56px;
     height: 56px;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     overflow: hidden;
     border: 1px solid var(--color-border-2);
     flex-shrink: 0;

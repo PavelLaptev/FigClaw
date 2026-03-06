@@ -1,6 +1,9 @@
 <script lang="ts">
+  import Badge from './Badge.svelte';
   import Button from './Button.svelte';
   import Icon from './Icon.svelte';
+  import { slide } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
 
   export type Skill = {
     id: string;
@@ -82,7 +85,7 @@
   let previewSkill = $state<Skill | null>(null);
 
   function openPreview(skill: Skill) {
-    previewSkill = skill;
+    previewSkill = previewSkill?.id === skill.id ? null : skill;
   }
 
   function closePreview() {
@@ -113,8 +116,18 @@
     ondragleave={onDragLeave}
     ondrop={onDrop}
   >
-    <span class="drop-icon">↑</span>
-    <span class="drop-label">Drop .md / .txt files here or click to browse</span>
+    <Icon name="arrow-up" />
+    {#if skills.filter((s) => !s.isDefault).length === 0}
+      <span class="drop-label"
+        >No custom skills yet.<br />Add by dropping .md / .txt files or click to browse</span
+      >
+    {:else}
+      <span class="drop-label">Add more skills by dropping .md / .txt files or click to browse</span
+      >
+    {/if}
+    <!-- {#if skills.filter((s) => !s.isDefault).length === 0}
+      <p class="empty-hint">No custom skills yet. Drop a .md file to add one.</p>
+    {/if} -->
     <input
       bind:this={fileInput}
       type="file"
@@ -130,16 +143,16 @@
   {/if}
 
   <!-- Skill list -->
-  {#if skills.filter((s) => !s.isDefault).length === 0}
+  <!-- {#if skills.filter((s) => !s.isDefault).length === 0}
     <p class="empty-hint">No custom skills yet. Drop a .md file to add one.</p>
-  {/if}
+  {/if} -->
   <ul class="skill-list">
     {#each skills as skill (skill.id)}
       <li class="skill-item" class:default-skill={skill.isDefault}>
         <div class="skill-meta">
           <span class="skill-name">{skill.name}</span>
           {#if skill.isDefault}
-            <span class="badge">built-in</span>
+            <Badge>built-in</Badge>
           {:else}
             <span class="skill-date">{formatDate(skill.addedAt)}</span>
           {/if}
@@ -152,18 +165,18 @@
           {/if}
         </span>
         <div class="item-actions">
-          <Button variant="icon" title="Preview" onclick={() => openPreview(skill)}
-            ><Icon name="preview" /></Button
+          <Button
+            variant="ghost"
+            title="Preview"
+            onclick={() => openPreview(skill)}
+            aria-pressed={previewSkill?.id === skill.id}><Icon name="preview" /></Button
           >
-          <Button variant="icon" title="Download" onclick={() => downloadSkill(skill)}
+          <Button variant="ghost" title="Download" onclick={() => downloadSkill(skill)}
             ><Icon name="download" /></Button
           >
           {#if !skill.isDefault}
-            <Button
-              variant="icon"
-              title="Remove"
-              class="remove-skill-btn"
-              onclick={() => onRemove(skill.id)}><Icon name="close" /></Button
+            <Button variant="ghost" title="Remove" onclick={() => onRemove(skill.id)}
+              ><Icon name="bin" /></Button
             >
           {/if}
         </div>
@@ -173,14 +186,16 @@
 
   <!-- Preview drawer -->
   {#if previewSkill}
-    <div class="preview">
+    <div class="preview" transition:slide={{ duration: 250, easing: cubicOut }}>
       <div class="preview-header">
         <span class="preview-title">{previewSkill.name}</span>
         <div class="preview-actions">
-          <Button variant="icon" title="Download" onclick={() => downloadSkill(previewSkill!)}
+          <Button variant="outline" title="Download" onclick={() => downloadSkill(previewSkill!)}
             ><Icon name="download" /></Button
           >
-          <Button variant="icon" title="Close" onclick={closePreview}><Icon name="close" /></Button>
+          <Button variant="outline" title="Close" onclick={closePreview}
+            ><Icon name="close" /></Button
+          >
         </div>
       </div>
       <pre class="preview-body">{previewSkill.content}</pre>
@@ -192,7 +207,6 @@
   .skills {
     display: flex;
     flex-direction: column;
-    gap: 8px;
     flex: 1;
     overflow: hidden;
   }
@@ -204,25 +218,21 @@
     justify-content: center;
     gap: 6px;
     border: 1px dashed var(--color-border-2);
-    border-radius: 8px;
-    padding: 20px 12px;
+    border-radius: var(--radius-md);
+    padding: 24px 20px;
     cursor: pointer;
     transition:
       border-color 0.15s,
-      background 0.15s;
+      background-color 0.15s;
     flex-shrink: 0;
     text-align: center;
+    margin: var(--spacing-inner-padding);
   }
 
   .drop-zone:hover,
   .drop-zone.dragging {
     border-color: var(--color-border-3);
     background: var(--color-surface-1);
-  }
-
-  .drop-icon {
-    font-size: 20px;
-    opacity: 0.5;
   }
 
   .drop-label {
@@ -241,24 +251,17 @@
     margin: 0;
   }
 
-  .empty-hint {
-    font-size: 11px;
-    opacity: 0.45;
-    text-align: center;
-    margin: auto;
-    line-height: 1.6;
-    padding: 0 16px;
-  }
-
   .skill-list {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
     overflow-y: auto;
     flex: 1;
+    padding: var(--spacing-inner-padding);
+    padding-top: 0;
   }
 
   .skill-item {
@@ -266,33 +269,17 @@
     grid-template-columns: 1fr auto;
     grid-template-rows: auto auto;
     align-items: center;
-    gap: 2px 8px;
+    gap: 5px 8px;
     background: var(--color-surface-1);
     border: 1px solid var(--color-border-1);
-    border-radius: 6px;
-    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
     position: relative;
-  }
-
-  .default-skill {
-    border-color: var(--color-border-2);
-    background: var(--color-surface-1);
-  }
-
-  .badge {
-    font-size: 9px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    opacity: 0.45;
-    border: 1px solid var(--color-border-2);
-    border-radius: 3px;
-    padding: 1px 4px;
-    flex-shrink: 0;
   }
 
   .skill-meta {
     display: flex;
+    align-items: center;
     align-items: baseline;
     gap: 6px;
     grid-column: 1;
@@ -301,7 +288,7 @@
   }
 
   .skill-name {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
@@ -309,7 +296,7 @@
   }
 
   .skill-date {
-    font-size: 10px;
+    font-size: 12px;
     opacity: 0.4;
     flex-shrink: 0;
   }
@@ -322,15 +309,9 @@
     gap: 2px;
   }
 
-  :global(.remove-skill-btn:hover) {
-    color: var(--color-accent-hover) !important;
-  }
-
   .preview {
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--color-border-1);
-    border-radius: 8px;
     overflow: hidden;
     flex-shrink: 0;
     max-height: 220px;
@@ -340,15 +321,17 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 10px;
+    padding: 8px;
     background: var(--color-surface-1);
+    border-top: 1px solid var(--color-border-1);
     border-bottom: 1px solid var(--color-border-1);
     flex-shrink: 0;
   }
 
   .preview-title {
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 500;
+    margin-left: 4px;
     opacity: 0.8;
   }
 
@@ -358,7 +341,7 @@
   }
 
   .preview-body {
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.6;
     opacity: 0.6;
     margin: 0;
@@ -371,7 +354,7 @@
   }
 
   .skill-file {
-    font-size: 10px;
+    font-size: 12px;
     opacity: 0.4;
     grid-column: 1;
     grid-row: 2;

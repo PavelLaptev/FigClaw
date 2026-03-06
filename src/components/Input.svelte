@@ -1,25 +1,38 @@
 <script lang="ts">
-  import { HTMLInputAttributes, HTMLInputTypeAttribute } from 'svelte/elements';
+  import type { HTMLInputTypeAttribute } from 'svelte/elements';
 
   interface Props {
+    id?: string;
     type?: HTMLInputTypeAttribute;
     value: string | number;
     placeholder?: string;
+    disabled?: boolean;
+    oninput?: (e: Event & { currentTarget: HTMLInputElement }) => void;
   }
 
-  let { value = $bindable(), type, placeholder }: Props = $props();
+  let { id, value = $bindable(), type, placeholder, disabled = false, oninput }: Props = $props();
 </script>
 
-<input {type} bind:value {placeholder} />
+<input {id} {type} bind:value {placeholder} {disabled} {oninput} />
 
 <style>
   input {
-    padding: 6px;
-    font-size: 14px;
-    border: 1px solid var(--color-border-3);
-    color: var(--color-text-primary);
-    border-radius: 4px;
-    background: none;
     width: 100%;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    height: var(--height-btn);
+    padding: 0 8px;
+    border: 1px solid var(--color-border-2);
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+    outline: none;
+  }
+
+  input:focus {
+    border-color: var(--color-border-3);
+  }
+
+  input:disabled {
+    opacity: 0.5;
   }
 </style>

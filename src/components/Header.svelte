@@ -13,7 +13,7 @@
   } = $props();
 </script>
 
-<header>
+<header class="header">
   <nav class="tabs-shell">
     <button class="tab-btn" class:active={activeTab === 'chat'} onclick={() => (activeTab = 'chat')}
       >Chat</button
@@ -36,39 +36,42 @@
   </nav>
   <div class="header-actions">
     {#if activeTab === 'chat'}
-      <Button onclick={onClear} title="New chat"><Icon name="plus" /></Button>
+      <Button onclick={onClear} title="New chat" variant="outline"><Icon name="plus" /></Button>
     {/if}
   </div>
 </header>
 
 <style>
-  header {
+  .header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 12px;
     flex-shrink: 0;
-    min-height: 40px;
+    padding: var(--spacing-inner-padding);
+    padding-bottom: 0;
   }
 
   .tabs-shell {
     display: flex;
     gap: 4px;
-    border: 1px solid var(--color-border-2);
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     padding: 3px;
     background: var(--color-surface-1);
   }
 
   .tab-btn {
+    display: inline-flex;
+    align-items: center;
     color: var(--color-text-tertiary);
     border: none;
     background: transparent;
-    padding: 4px 12px;
-    border-radius: 10px;
+    height: calc(var(--height-btn) - 4px);
+    padding: 0 8px;
+    border-radius: var(--radius-md);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    line-height: 1.2;
+    line-height: 1;
   }
 
   .tab-btn:hover {
@@ -90,7 +93,7 @@
     width: 44px !important;
     height: 44px !important;
     min-width: 44px;
-    border-radius: 10px !important;
+    border-radius: var(--radius-lg) !important;
     border: 1px solid var(--color-border-2) !important;
     background: transparent !important;
     color: var(--color-text-secondary) !important;

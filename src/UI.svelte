@@ -49,7 +49,7 @@
   let apiKeyInput = $state('');
   let hasApiKey = $state(false);
   let statusMessage = $state('');
-  let model = $state('claude-sonnet-4-5');
+  let model = $state('claude-sonnet-4-6');
   let prompt = $state('');
   let attachedImages = $state<AttachedImage[]>([]);
   let isSending = $state(false);
@@ -445,15 +445,6 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
                 ? 'fetch_docs: ' + String(tool.input.url || '')
                 : tool.name;
 
-          // For run_figma_code: show the code block in chat before executing
-          if (tool.name === 'run_figma_code' && tool.input.code) {
-            pushDisplay({
-              role: 'code',
-              text: String(tool.input.code),
-              toolName: tool.name,
-            });
-          }
-
           pushDisplay({
             role: 'tool',
             text: displayLabel,
@@ -540,14 +531,11 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
     if (displayMessages.length > 0) upsertCurrentChat();
     displayMessages = [];
     apiHistory = [];
-    statusMessage = '';
     currentChatId = makeId();
   }
 
   function resumeChat(chat: SavedChat) {
     if (displayMessages.length > 0) upsertCurrentChat();
-    savedChats = savedChats.filter((c) => c.id !== chat.id);
-    persistHistory(savedChats);
     displayMessages = [...chat.displayMessages];
     apiHistory = [...chat.apiHistory];
     currentChatId = chat.id;
@@ -563,14 +551,21 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
   }
 
   // ─── Skills ───────────────────────────────────────────────────────────────
+  function persistSkills(updated: Skill[]) {
+    // Svelte rune state can contain proxy-wrapped objects that are not postMessage-cloneable.
+    // Force plain JSON-serializable data before crossing iframe boundary.
+    const serializableSkills = JSON.parse(JSON.stringify(updated)) as Skill[];
+    sendToPlugin({ type: 'save-skills', skills: serializableSkills });
+  }
+
   function addSkill(skill: Skill) {
     skills = [...skills, skill];
-    sendToPlugin({ type: 'save-skills', skills });
+    persistSkills(skills);
   }
 
   function removeSkill(id: string) {
     skills = skills.filter((s) => s.id !== id);
-    sendToPlugin({ type: 'save-skills', skills });
+    persistSkills(skills);
   }
 
   // ─── Plugin message handler ───────────────────────────────────────────────
@@ -580,15 +575,20 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
 
     if (msg.type === 'init') {
       hasApiKey = Boolean(msg.hasApiKey);
-      statusMessage = !hasApiKey ? 'Claude is ready ✨' : 'Add your Claude API key to start 🔑';
+      statusMessage = hasApiKey ? 'Claude is ready ✨' : 'Add your Claude API key to start 🔑';
       if (msg.apiKey) {
         storedApiKey = String(msg.apiKey);
       }
       if (Array.isArray(msg.skills)) {
         skills = msg.skills as Skill[];
       }
-      if (Array.isArray(msg.chatHistory)) {
-        savedChats = msg.chatHistory as SavedChat[];
+      if (Array.isArray(msg.chatHistory) && msg.chatHistory.length > 0) {
+        const chats = msg.chatHistory as SavedChat[];
+        const latest = chats[0];
+        savedChats = chats;
+        displayMessages = [...latest.displayMessages];
+        apiHistory = [...latest.apiHistory];
+        currentChatId = latest.id;
       }
       return;
     }
@@ -645,31 +645,40 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
       bind:model
       {hasApiKey}
       keyLoaded={Boolean(storedApiKey)}
+      apiKey={storedApiKey}
       onSave={() => sendToPlugin({ type: 'save-api-key', apiKey: apiKeyInput })}
       onRemove={() => sendToPlugin({ type: 'save-api-key', apiKey: '' })}
     />
   {:else if activeTab === 'skills'}
     <Skills skills={allSkills} onAdd={addSkill} onRemove={removeSkill} />
   {:else if activeTab === 'history'}
-    <History {savedChats} onResume={resumeChat} onDelete={deleteChat} />
+    <History
+      {savedChats}
+      {currentChatId}
+      onResume={resumeChat}
+      onDelete={deleteChat}
+      onUnapply={clearChat}
+    />
   {:else}
     <!-- Chat messages -->
-    <section class="chat" bind:this={messagesContainer}>
-      {#if displayMessages.length === 0}
-        <EmptyChat />
-      {:else}
-        {#each displayMessages as msg}
-          <ChatMessage {msg} />
-        {/each}
-        {#if isSending}
-          <div class="thinking">
-            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          </div>
+    <div class="chat-wrapper">
+      <section class="chat" bind:this={messagesContainer}>
+        {#if displayMessages.length === 0}
+          <EmptyChat />
+        {:else}
+          {#each displayMessages as msg}
+            <ChatMessage {msg} />
+          {/each}
+          {#if isSending}
+            <div class="thinking">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            </div>
+          {/if}
         {/if}
-      {/if}
-    </section>
+      </section>
+    </div>
 
-    {#if statusMessage}
+    {#if statusMessage && displayMessages.length === 0}
       <p class="status">{statusMessage}</p>
     {/if}
 
@@ -685,14 +694,43 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
     overflow: hidden;
   }
 
+  .chat-wrapper {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+
+    &::after {
+      position: absolute;
+      top: 0;
+      left: 0;
+      content: '';
+      height: 30px;
+      width: calc(100% - var(--spacing-inner-padding));
+      pointer-events: none;
+      background: linear-gradient(var(--color-bg) 20%, transparent 100%);
+    }
+
+    &::before {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      content: '';
+      height: 30px;
+      width: calc(100% - var(--spacing-inner-padding));
+      pointer-events: none;
+      background: linear-gradient(transparent 0%, var(--color-bg) 80%);
+    }
+  }
+
   /* Chat */
   .chat {
-    flex: 1;
+    height: 100%;
+    overflow-y: auto;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 0;
+    gap: 10px;
+    padding: calc(var(--spacing-inner-padding) * 2) var(--spacing-inner-padding);
   }
 
   /* Thinking dots */
@@ -733,7 +771,7 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
 
   /* Status */
   .status {
-    padding: 4px 14px;
+    padding: 12px var(--spacing-inner-padding);
     font-size: 12px;
     opacity: 0.4;
     margin: 0;

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Badge from './Badge.svelte';
   import Button from './Button.svelte';
   import Icon from './Icon.svelte';
 
@@ -30,8 +31,10 @@
   };
 
   export let savedChats: SavedChat[] = [];
+  export let currentChatId: string = '';
   export let onResume: (chat: SavedChat) => void;
   export let onDelete: (id: string) => void;
+  export let onUnapply: () => void;
 
   function formatDate(ts: number): string {
     const d = new Date(ts);
@@ -52,23 +55,43 @@
 </script>
 
 <section class="history">
-  <h3>Past chats</h3>
-
   {#if savedChats.length === 0}
     <p class="empty">
       No past chats yet.<br />Start a conversation, then clear it to save it here.
     </p>
   {:else}
     <ul class="list">
-      {#each savedChats as chat (chat.id)}
-        <li class="item">
-          <Button variant="ghost" onclick={() => onResume(chat)} class="resume-btn">
+      {#each savedChats.filter((c) => c.id === currentChatId) as chat (chat.id)}
+        <li class="item active">
+          <div class="item-meta">
             <span class="title">{chat.title}</span>
-            <span class="meta">{formatDate(chat.savedAt)} · {msgCount(chat)} messages</span>
-          </Button>
-          <Button variant="icon" onclick={() => onDelete(chat.id)} title="Delete" class="delete-btn"
-            ><Icon name="close" /></Button
-          >
+            <Badge>applied</Badge>
+          </div>
+          <span class="sub">{formatDate(chat.savedAt)} · {msgCount(chat)} messages</span>
+          <div class="item-actions">
+            <Button variant="outline" onclick={onUnapply}>Unapply <Icon name="close" /></Button>
+            <div class="vertical-devider"></div>
+            <Button variant="ghost" onclick={() => onDelete(chat.id)} title="Delete"
+              ><Icon name="bin" /></Button
+            >
+          </div>
+        </li>
+      {/each}
+      {#each savedChats.filter((c) => c.id !== currentChatId) as chat (chat.id)}
+        <li class="item">
+          <div class="item-meta">
+            <span class="title">{chat.title}</span>
+          </div>
+          <span class="sub">{formatDate(chat.savedAt)} · {msgCount(chat)} messages</span>
+          <div class="item-actions">
+            <Button variant="outline" onclick={() => onResume(chat)}
+              >Apply chat <Icon name="arrow-up" /></Button
+            >
+            <div class="vertical-devider"></div>
+            <Button variant="ghost" onclick={() => onDelete(chat.id)} title="Delete"
+              ><Icon name="bin" /></Button
+            >
+          </div>
         </li>
       {/each}
     </ul>
@@ -79,25 +102,17 @@
   .history {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    overflow-y: auto;
     flex: 1;
-  }
-
-  h3 {
-    margin: 0;
-    font-size: 13px;
-    color: var(--color-text-tertiary);
-    font-weight: 500;
+    overflow: hidden;
   }
 
   .empty {
     font-size: 12px;
     opacity: 0.45;
     line-height: 1.7;
-    margin: auto;
     text-align: center;
-    padding: 20px;
+    padding: var(--spacing-inner-padding);
+    margin: 0;
   }
 
   .list {
@@ -106,55 +121,62 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+    padding: var(--spacing-inner-padding);
   }
 
   .item {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
     align-items: center;
-    gap: 4px;
+    gap: 6px 8px;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-1);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
   }
 
-  :global(.resume-btn) {
-    flex: 1 !important;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 2px !important;
-    background: var(--color-surface-1) !important;
-    border: none !important;
-    border-radius: 8px !important;
-    padding: 8px 10px !important;
-    text-align: left !important;
-    min-width: 0 !important;
-  }
-
-  :global(.resume-btn:hover) {
-    background: var(--color-surface-2) !important;
+  .item-meta {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
   }
 
   .title {
-    font-size: 12px;
-    color: white;
+    font-size: 14px;
+    font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100%;
   }
 
-  .meta {
-    font-size: 10px;
-    color: var(--color-text-tertiary);
+  .sub {
+    font-size: 12px;
+    opacity: 0.4;
+    grid-column: 1;
+    grid-row: 2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  :global(.delete-btn) {
-    flex-shrink: 0 !important;
-    color: var(--color-text-tertiary) !important;
-    font-size: 11px !important;
-    padding: 6px !important;
+  .item-actions {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
-  :global(.delete-btn:hover) {
-    color: var(--color-text-primary) !important;
-    background: var(--color-surface-2) !important;
+  .vertical-devider {
+    width: 1px;
+    height: calc(var(--height-btn) - 8px);
+    background: var(--color-border-1);
   }
 </style>

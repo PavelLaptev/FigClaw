@@ -60,6 +60,18 @@ h6 {
   --color-orange: #fb923c;
   --color-orange-bg: rgba(251, 146, 60, 0.15);
   --color-orange-border: rgba(251, 146, 60, 0.3);
+
+  /* Border radius */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 14px;
+
+  /* Spacing */
+  --spacing-inner-padding: 14px;
+
+  /* Component sizes */
+  --height-btn: 28px;
 }
 
 body {
@@ -76,4 +88,28 @@ body {
     Helvetica,
     Arial,
     sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-3);
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-3);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-3) transparent;
 }

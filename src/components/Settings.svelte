@@ -1,11 +1,23 @@
+<script context="module" lang="ts">
+  type AnthropicModel = { id: string; display_name: string };
+  // True module-level cache — survives component unmount/remount
+  let cachedModels: AnthropicModel[] | null = null;
+  let cachedForKey: string = '';
+</script>
+
 <script lang="ts">
+  import Badge from './Badge.svelte';
   import Button from './Button.svelte';
+  import Input from './Input.svelte';
+  import Icon from './Icon.svelte';
+  import Select from './Select.svelte';
 
   let {
     apiKeyInput = $bindable(''),
     model = $bindable(''),
     hasApiKey,
     keyLoaded,
+    apiKey = '',
     onSave,
     onRemove,
   }: {
@@ -13,41 +25,120 @@
     model: string;
     hasApiKey: boolean;
     keyLoaded: boolean;
+    apiKey?: string;
     onSave: () => void;
     onRemove: () => void;
   } = $props();
+
+  const FALLBACK_MODELS: AnthropicModel[] = [
+    { id: 'claude-opus-4-5', display_name: 'Claude Opus 4.5' },
+    { id: 'claude-sonnet-4-5', display_name: 'Claude Sonnet 4.5' },
+    { id: 'claude-haiku-3-5', display_name: 'Claude Haiku 3.5' },
+    { id: 'claude-3-5-sonnet-20241022', display_name: 'Claude 3.5 Sonnet' },
+    { id: 'claude-3-5-haiku-20241022', display_name: 'Claude 3.5 Haiku' },
+    { id: 'claude-3-opus-20240229', display_name: 'Claude 3 Opus' },
+  ];
+
+  let models = $state<AnthropicModel[]>(cachedModels ?? FALLBACK_MODELS);
+  let modelsLoading = $state(false);
+  let modelsError = $state('');
+
+  async function fetchModels() {
+    if (!apiKey) return;
+
+    // Return cached result if the key hasn't changed
+    if (cachedModels && cachedForKey === apiKey) {
+      models = cachedModels;
+      if (models.length > 0 && !models.find((m) => m.id === model)) {
+        model = models[0].id;
+      }
+      return;
+    }
+
+    modelsLoading = true;
+    modelsError = '';
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/models', {
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      models = (data.data as AnthropicModel[]).filter((m) => m.id.startsWith('claude-'));
+      cachedModels = models;
+      cachedForKey = apiKey;
+      if (models.length > 0 && !models.find((m) => m.id === model)) {
+        model = models[0].id;
+      }
+    } catch (e) {
+      modelsError = 'Could not fetch models';
+    } finally {
+      modelsLoading = false;
+    }
+  }
+
+  $effect(() => {
+    if (apiKey) fetchModels();
+  });
 </script>
 
 <section class="settings">
-  <label for="api-key">Claude API key</label>
-  {#if hasApiKey}
-    <div class="row">
-      <div class="status-badge saved">✓ Saved in storage</div>
-      <Button variant="ghost" onclick={onRemove}>Remove</Button>
+  <div class="input-wrap">
+    <div class="model-label-row">
+      <label for="api-key">Claude API key</label>
+      {#if hasApiKey}
+        <Badge variant="saved">✓ Saved in storage</Badge>
+      {:else}
+        <Badge variant="missing">✗ Not saved in storage</Badge>
+      {/if}
     </div>
-  {:else}
     <div class="row">
-      <input id="api-key" type="password" bind:value={apiKeyInput} placeholder="sk-ant-..." />
-      <Button variant="ghost" onclick={onSave}>Save</Button>
+      <Input
+        id="api-key"
+        type="password"
+        value={hasApiKey ? apiKey : apiKeyInput}
+        oninput={(e) => {
+          if (!hasApiKey) apiKeyInput = e.currentTarget.value;
+        }}
+        placeholder="sk-ant-..."
+        disabled={hasApiKey}
+      />
+      {#if hasApiKey}
+        <Button variant="primary" onclick={onRemove}>
+          Forget key
+          <Icon name="bin" />
+        </Button>
+      {:else}
+        <Button variant="primary" onclick={onSave}>Save key</Button>
+      {/if}
     </div>
-    <div class="status-badge missing">✗ Not saved in storage</div>
-  {/if}
-  <div class="status-badge" class:saved={keyLoaded} class:missing={!keyLoaded}>
-    {keyLoaded ? '✓ Key loaded in session' : '✗ Key not loaded in session'}
   </div>
 
-  <label for="model">Model</label>
-  <input id="model" type="text" bind:value={model} placeholder="claude-sonnet-4-5" />
+  {#if apiKey}
+    <div class="input-wrap">
+      <label for="model">Model</label>
+      <Select
+        id="model"
+        bind:value={model}
+        options={models.map((m) => ({ value: m.id, label: m.display_name }))}
+        disabled={modelsLoading}
+      />
+      {#if modelsError}
+        <Badge variant="missing">{modelsError}</Badge>
+      {/if}
+    </div>
+  {/if}
 </section>
 
 <style>
   .settings {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    border: 1px solid var(--color-border-1);
-    border-radius: 8px;
-    padding: 10px;
+    gap: 16px;
+    padding: var(--spacing-inner-padding);
     flex-shrink: 0;
   }
 
@@ -57,46 +148,20 @@
   }
 
   label {
-    font-size: 11px;
+    font-size: 13px;
     opacity: 0.6;
     margin: 0;
   }
 
-  .status-badge {
-    display: inline-flex;
+  .input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .model-label-row {
+    display: flex;
     align-items: center;
-    font-size: 11px;
-    font-weight: 500;
-    padding: 3px 8px;
-    border-radius: 4px;
-    width: fit-content;
-    margin: 0;
-  }
-
-  .status-badge.saved {
-    background: var(--color-green-bg);
-    color: var(--color-green);
-    border: 1px solid var(--color-green-border);
-  }
-
-  .status-badge.missing {
-    background: var(--color-orange-bg);
-    color: var(--color-orange);
-    border: 1px solid var(--color-orange-border);
-  }
-
-  input {
-    width: 100%;
-    border-radius: 6px;
-    font-size: 13px;
-    padding: 8px;
-    border: 1px solid var(--color-border-2);
-    background: var(--color-surface-1);
-    color: var(--color-text-primary);
-    outline: none;
-  }
-
-  input:focus {
-    border-color: var(--color-border-3);
+    gap: 10px;
   }
 </style>

@@ -8,12 +8,13 @@
     variant?: 'primary' | 'ghost' | 'outline';
     disabled?: boolean;
     title?: string;
+    'aria-pressed'?: boolean;
   }
 
-  let { children, onclick, variant = 'primary', disabled = false, title }: Props = $props();
+  let { children, onclick, variant = 'primary', disabled = false, title, 'aria-pressed': ariaPressed }: Props = $props();
 </script>
 
-<button class="btn btn--{variant}" {onclick} {disabled} {title}>
+<button class="btn btn--{variant}" {onclick} {disabled} {title} aria-pressed={ariaPressed}>
   {#if children}
     {@render children()}
   {/if}
@@ -26,7 +27,7 @@
     justify-content: center;
     gap: 4px;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     cursor: pointer;
     font-size: 13px;
     font-weight: 500;
@@ -35,7 +36,8 @@
       background-color 0.15s,
       color 0.15s;
     white-space: nowrap;
-    padding: 8px 10px;
+    height: var(--height-btn);
+    padding: 0 6px;
     font-family: inherit;
     font-weight: 600;
   }
@@ -72,7 +74,7 @@
   }
 
   .btn--outline {
-    color: var(--color-text-primary);
+    color: var(--color-text-secondary);
     background: transparent;
     border: 1px solid var(--color-border-1);
   }
