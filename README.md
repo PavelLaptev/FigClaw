@@ -43,6 +43,7 @@ The toolset is intentionally small. Rather than exposing a specific tool for eve
 | `get_components` | Lists all components and component sets on the current page                                                                                                                                    |
 | `get_pages`      | Lists all pages in the document with their id, name, and child node count                                                                                                                      |
 | `notify`         | Shows a toast notification inside Figma                                                                                                                                                        |
+| `download_files` | Triggers a file download in the user's browser — use for exporting SVGs, PNGs, or any other binary/text data to disk                                                                          |
 | `fetch_docs`     | Fetches a Figma Plugin API reference page on demand so Claude always has the right signatures                                                                                                  |
 
 ## Skills
@@ -51,17 +52,16 @@ Skills are Markdown files that get injected into Claude's system prompt, giving 
 
 The repository ships with several example skills in the `skills/` folder:
 
-| Skill                   | Description                                                                     |
-| ----------------------- | ------------------------------------------------------------------------------- |
-| `accessibility.md`      | WCAG contrast checking and accessibility annotations                            |
-| `component-builder.md`  | Patterns for building production-ready components with variants and auto-layout |
-| `design-tokens.md`      | Creating and applying Figma Variables as design tokens                          |
-| `icon-exporter.md`      | Batch-exporting icons with consistent naming                                    |
-| `naming-conventions.md` | Enforcing layer naming rules                                                    |
-| `everything-is-pink.md` | Makes everything pink (demo)                                                    |
-| `pirate-mode.md`        | Claude responds like a pirate                                                   |
-| `uwu-mode.md`           | uwu                                                                             |
-| `overly-cautious.md`    | Claude adds excessive warnings to every action                                  |
+| Skill                      | Description                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------- |
+| `accessibility.md`         | WCAG contrast checking and accessibility annotations                            |
+| `component-builder.md`     | Patterns for building production-ready components with variants and auto-layout |
+| `design-tokens.md`         | Creating and applying Figma Variables as design tokens                          |
+| `icon-exporter.md`         | Batch-exporting icons with consistent naming                                    |
+| `naming-conventions.md`    | Enforcing layer naming rules                                                    |
+| `everything-is-pink.md`    | Makes everything pink (demo)                                                    |
+| `samuel-l-jackson-mode.md` | Claude responds like Samuel L. Jackson                                          |
+| `overly-cautious.md`       | Claude adds excessive warnings to every action                                  |
 
 Load any `.md` file from the **Skills** tab — or write your own.
 

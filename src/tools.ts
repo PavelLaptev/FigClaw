@@ -114,6 +114,45 @@ export const TOOLS = [
       required: ['message'],
     },
   },
+  {
+    name: 'download_files',
+    description:
+      "Triggers a file download in the user's browser from inside the plugin. " +
+      "Use this to save exported SVGs, PNGs, or any other binary/text data to the user's disk. " +
+      'Each file needs a filename and its content. ' +
+      'For SVG exports use exportAsync with format "SVG_STRING" to get the content as a string. ' +
+      'For binary formats (PNG, JPG, PDF) use exportAsync with the appropriate format — the result is a Uint8Array; ' +
+      'pass it directly as the content value and set isBinary to true.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          description: 'Array of files to download.',
+          items: {
+            type: 'object',
+            properties: {
+              filename: {
+                type: 'string',
+                description: 'File name including extension, e.g. "icon-arrow.svg"',
+              },
+              content: {
+                description:
+                  'File content. String for text formats (SVG_STRING, etc.) or Uint8Array for binary.',
+              },
+              mimeType: {
+                type: 'string',
+                description:
+                  'MIME type, e.g. "image/svg+xml", "image/png". Defaults to "application/octet-stream".',
+              },
+            },
+            required: ['filename', 'content'],
+          },
+        },
+      },
+      required: ['files'],
+    },
+  },
 ] as const;
 
 export type ToolName = (typeof TOOLS)[number]['name'];

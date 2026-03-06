@@ -23,19 +23,33 @@ flat.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
 
 ## Export all icons as SVG
 
+Use `exportAsync` with `format: 'SVG_STRING'` so the result is already a string.
+Then pass all files to the `download_files` tool — it sends the data to the UI which
+triggers a real browser download dialog for each file.
+
 ```js
 const page = figma.currentPage;
 const icons = page.children.filter((n) => n.name.startsWith('Icon/'));
 
-const results = [];
+if (icons.length === 0) return { error: 'No Icon/* nodes found on this page.' };
+
+const files = [];
 for (const icon of icons) {
-  const svg = await icon.exportAsync({ format: 'SVG' });
-  const text = String.fromCharCode(...svg);
-  results.push({ name: icon.name, size: svg.byteLength });
+  const svgString = await icon.exportAsync({ format: 'SVG_STRING' });
+  const safeName = icon.name.replace(/\//g, '-').replace(/\s+/g, '-').toLowerCase();
+  files.push({
+    filename: safeName + '.svg',
+    content: svgString,
+    mimeType: 'image/svg+xml',
+  });
 }
 
-return { exported: results.length, icons: results };
+return { exported: files.length, files: files.map((f) => f.filename) };
 ```
+
+**Important:** After running the code above, call the `download_files` tool with the
+collected files array to actually trigger the downloads. The `download_files` tool is
+the only way to save files to the user's disk from inside a Figma plugin.
 
 ## Create a simple icon component from a vector
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import JSZip from 'jszip';
   import './styles.css';
   import { tick } from 'svelte';
   import Header, { type Tab } from './components/Header.svelte';
@@ -39,6 +40,13 @@
     apiHistory: ApiMessage[];
   };
 
+  type DownloadFilePayload = {
+    filename: string;
+    mimeType?: string;
+    content: unknown;
+    isBinary?: boolean;
+  };
+
   // ─── Helpers (defined early so $state initializers can use them) ──────────
   function makeId(): string {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -72,6 +80,11 @@
   let currentChatId = $state<string>(makeId());
 
   let messagesContainer = $state<HTMLElement | null>(null);
+  let composer = $state<Composer | null>(null);
+
+  $effect(() => {
+    if (composer) tick().then(() => composer?.focusTextarea());
+  });
 
   // SYSTEM_PROMPT is imported from ./system-prompt.md at build time.
   // Edit that file to change Claude's base behaviour.
@@ -92,6 +105,143 @@
   // ─── Helpers ──────────────────────────────────────────────────────────────
   function sendToPlugin(msg: Record<string, unknown>) {
     parent.postMessage({ pluginMessage: msg }, '*');
+  }
+
+  function toUint8Array(content: unknown): Uint8Array | null {
+    if (content instanceof Uint8Array) return content;
+
+    if (Array.isArray(content)) {
+      const allNumbers = content.every((v) => typeof v === 'number' && Number.isFinite(v));
+      if (!allNumbers) return null;
+      return Uint8Array.from(content.map((v) => Number(v)));
+    }
+
+    if (content && typeof content === 'object') {
+      const numericEntries = Object.entries(content as Record<string, unknown>)
+        .filter(([key]) => /^\d+$/.test(key))
+        .sort((a, b) => Number(a[0]) - Number(b[0]));
+
+      if (numericEntries.length === 0) return null;
+
+      const values = numericEntries.map(([, value]) => {
+        const n = Number(value);
+        return Number.isFinite(n) ? n : 0;
+      });
+      return Uint8Array.from(values);
+    }
+
+    return null;
+  }
+
+  function uint8ToArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+    if (bytes.buffer instanceof ArrayBuffer) {
+      return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    }
+    return Uint8Array.from(bytes).buffer;
+  }
+
+  function payloadToBlob(file: DownloadFilePayload): Blob {
+    const mimeType = typeof file.mimeType === 'string' ? file.mimeType : 'application/octet-stream';
+
+    if (file.isBinary) {
+      const bytes = toUint8Array(file.content);
+      if (!bytes) {
+        throw new Error(`Invalid binary content for ${file.filename}`);
+      }
+      return new Blob([uint8ToArrayBuffer(bytes)], { type: mimeType });
+    } else if (typeof file.content === 'string') {
+      return new Blob([file.content], { type: mimeType });
+    } else {
+      const maybeBinary = toUint8Array(file.content);
+      if (maybeBinary) {
+        return new Blob([uint8ToArrayBuffer(maybeBinary)], { type: mimeType });
+      } else {
+        return new Blob([JSON.stringify(file.content, null, 2)], {
+          type: 'application/json;charset=utf-8',
+        });
+      }
+    }
+  }
+
+  function downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename || 'export';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  function triggerDownload(file: DownloadFilePayload): void {
+    const blob = payloadToBlob(file);
+    downloadBlob(blob, file.filename || 'export');
+  }
+
+  function getZipFileName(files: DownloadFilePayload[]): string {
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    const svgOnly = files.every((f) => String(f.filename || '').toLowerCase().endsWith('.svg'));
+    return svgOnly ? `icons-export-${dateStamp}.zip` : `figclaw-export-${dateStamp}.zip`;
+  }
+
+  async function downloadAsZip(files: DownloadFilePayload[]): Promise<string> {
+    const zip = new JSZip();
+    for (const file of files) {
+      const filename = String(file.filename || 'export');
+      zip.file(filename, payloadToBlob(file));
+    }
+
+    const zipBlob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 },
+    });
+
+    const zipName = getZipFileName(files);
+    downloadBlob(zipBlob, zipName);
+    return zipName;
+  }
+
+  async function handleDownloadFiles(files: DownloadFilePayload[]): Promise<void> {
+    if (files.length === 0) {
+      statusMessage = 'No files were downloaded.';
+      return;
+    }
+
+    if (files.length > 1) {
+      try {
+        const zipName = await downloadAsZip(files);
+        statusMessage = `Downloaded ${files.length} files as ${zipName}`;
+        return;
+      } catch (error) {
+        console.error('ZIP creation failed, falling back to per-file download.', error);
+      }
+    }
+
+    let successCount = 0;
+    for (const file of files) {
+      try {
+        triggerDownload(file);
+        successCount += 1;
+      } catch (error) {
+        console.error('Download failed for file:', file.filename, error);
+      }
+    }
+
+    if (successCount === files.length) {
+      statusMessage =
+        files.length === 1
+          ? `Downloaded 1 file: ${files[0].filename}`
+          : `Downloaded ${files.length} files`;
+      return;
+    }
+
+    statusMessage =
+      successCount > 0
+        ? `Downloaded ${successCount}/${files.length} files. Check browser download settings.`
+        : 'No files were downloaded. Check browser download permissions/settings.';
   }
 
   async function scrollBottom() {
@@ -380,6 +530,7 @@
     displayMessages = [];
     apiHistory = [];
     currentChatId = makeId();
+    tick().then(() => composer?.focusTextarea());
   }
 
   function resumeChat(chat: SavedChat) {
@@ -474,6 +625,13 @@
       return;
     }
 
+    if (msg.type === 'download-files') {
+      if (Array.isArray(msg.files)) {
+        void handleDownloadFiles(msg.files as DownloadFilePayload[]);
+      }
+      return;
+    }
+
     if (msg.type === 'chat-error') {
       isSending = false;
       statusMessage = 'Error: ' + String(msg.error);
@@ -531,7 +689,14 @@
       <p class="status">{statusMessage}</p>
     {/if}
 
-    <Composer bind:prompt bind:attachedImages {isSending} onSend={sendMessage} onStop={stopAgent} />
+    <Composer
+      bind:this={composer}
+      bind:prompt
+      bind:attachedImages
+      {isSending}
+      onSend={sendMessage}
+      onStop={stopAgent}
+    />
   {/if}
 </main>
 

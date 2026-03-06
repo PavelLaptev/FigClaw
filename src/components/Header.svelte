@@ -25,13 +25,13 @@
     >
     <button
       class="tab-btn"
-      class:active={activeTab === 'settings'}
-      onclick={() => (activeTab = 'settings')}>Settings</button
+      class:active={activeTab === 'history'}
+      onclick={() => (activeTab = 'history')}>History</button
     >
     <button
       class="tab-btn"
-      class:active={activeTab === 'history'}
-      onclick={() => (activeTab = 'history')}>History</button
+      class:active={activeTab === 'settings'}
+      onclick={() => (activeTab = 'settings')}>Settings</button
     >
   </nav>
   <div class="header-actions">

@@ -279,6 +279,34 @@ async function executeTool(name: string, input: Record<string, unknown>): Promis
       return { notified: true };
     }
 
+    case 'download_files': {
+      const files = Array.isArray(input.files) ? input.files : [];
+      if (files.length === 0) return { error: 'No files provided.' };
+
+      const serialized = files.map((f: Record<string, unknown>) => {
+        const content = f.content;
+        // Uint8Array comes through as an object with numeric keys — convert to plain array for postMessage
+        const isUint8 =
+          content instanceof Uint8Array ||
+          (content !== null &&
+            typeof content === 'object' &&
+            !Array.isArray(content) &&
+            Object.prototype.toString.call(content) === '[object Uint8Array]');
+        return {
+          filename: String(f.filename || 'export'),
+          mimeType: String(f.mimeType || 'application/octet-stream'),
+          content: isUint8 ? Array.from(content as Uint8Array) : content,
+          isBinary: isUint8,
+        };
+      });
+
+      figma.ui.postMessage({ type: 'download-files', files: serialized });
+      return {
+        downloading: serialized.length,
+        files: serialized.map((f: Record<string, unknown>) => f.filename),
+      };
+    }
+
     default:
       return { error: 'Unknown tool: ' + name };
   }

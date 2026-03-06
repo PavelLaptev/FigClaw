@@ -19,6 +19,11 @@
   } = $props();
 
   let fileInput: HTMLInputElement | null = null;
+  let textarea: HTMLTextAreaElement | null = null;
+
+  export function focusTextarea() {
+    textarea?.focus();
+  }
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -77,6 +82,7 @@
     {/if}
 
     <textarea
+      bind:this={textarea}
       bind:value={prompt}
       onkeydown={handleKeydown}
       onpaste={handlePaste}
@@ -106,7 +112,7 @@
       />
       {#if isSending}
         <Button variant="outline" onclick={onStop}>
-          <Icon name="close" />
+          <Icon name="stop" />
           Stop
         </Button>
       {:else}
@@ -171,7 +177,7 @@
   textarea {
     width: 100%;
     border-radius: 0;
-    font-size: 14px;
+    font-size: 13px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
       'Courier New', monospace;
     padding: 0;
