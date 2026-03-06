@@ -210,7 +210,65 @@ async function executeTool(name: string, input: Record<string, unknown>): Promis
         name: s.name,
         type: 'text',
       }));
-      return { paintStyles, textStyles };
+      const effectStyles = figma.getLocalEffectStyles().map((s) => ({
+        id: s.id,
+        name: s.name,
+        type: 'effect',
+      }));
+      const gridStyles = figma.getLocalGridStyles().map((s) => ({
+        id: s.id,
+        name: s.name,
+        type: 'grid',
+      }));
+      return { paintStyles, textStyles, effectStyles, gridStyles };
+    }
+
+    case 'get_variables': {
+      const collections = figma.variables.getLocalVariableCollections().map((col) => ({
+        id: col.id,
+        name: col.name,
+        modes: col.modes,
+        defaultModeId: col.defaultModeId,
+        variables: col.variableIds.map((varId) => {
+          const v = figma.variables.getVariableById(varId);
+          if (!v) return { id: varId };
+          return {
+            id: v.id,
+            name: v.name,
+            resolvedType: v.resolvedType,
+            scopes: v.scopes,
+            valuesByMode: v.valuesByMode,
+          };
+        }),
+      }));
+      return { collections };
+    }
+
+    case 'get_components': {
+      const components = figma.currentPage
+        .findAll((n) => n.type === 'COMPONENT' || n.type === 'COMPONENT_SET')
+        .map((n) => {
+          const base: Record<string, unknown> = {
+            id: n.id,
+            name: n.name,
+            type: n.type,
+          };
+          if ('description' in n) base.description = n.description;
+          if ('componentPropertyDefinitions' in n)
+            base.componentPropertyDefinitions = n.componentPropertyDefinitions;
+          return base;
+        });
+      return { components };
+    }
+
+    case 'get_pages': {
+      const pages = figma.root.children.map((p) => ({
+        id: p.id,
+        name: p.name,
+        nodeCount: p.children.length,
+        isCurrent: p.id === figma.currentPage.id,
+      }));
+      return { pages };
     }
 
     case 'notify': {

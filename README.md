@@ -1,52 +1,100 @@
 # FigClaw
 
+> Available on the [Figma Community](https://www.figma.com/community/plugin/1610744892832367485/figclaw)
+
 FigClaw is an agentic Claude-powered Figma plugin that lets you chat with your canvas, inspect and manipulate nodes, and execute Figma Plugin API code — all from within Figma.
 
-Instead of a simple Q&A chat, FigClaw runs an agent loop: it can inspect your current selection, read page structure, look up Figma Plugin API docs on demand, write and execute JavaScript against the `figma` global, and report back what changed — all in one conversation.
+Instead of a simple Q&A chat, FigClaw runs an agent loop: it inspects your current selection, reads the page structure, looks up Figma Plugin API docs on demand, writes and executes JavaScript against the `figma` global, and reports back what changed — all in one conversation turn.
+
+## Motivation
+
+Figma's Plugin API is powerful, but writing plugins can be a chore — especially for quick one-off automations. With FigClaw, you can skip the boilerplate and just tell Claude what you want to do with your canvas in natural language. It's like having a coding assistant built right into Figma.
 
 ## Features
 
 - **Agentic loop** — Claude autonomously calls tools, reads results, and iterates until the task is done
-- **Canvas inspection** — get the current selection or full page node tree
+- **Canvas inspection** — read the current selection or the full page node tree
 - **Code execution** — run arbitrary Figma Plugin API code with full `await` support
-- **Doc lookup** — fetches Figma API docs on demand so Claude always has the right API signatures
-- **Image attachments** — attach screenshots or reference images to your messages
+- **Doc lookup** — fetches Figma API docs on demand so Claude always has the right signatures
+- **Skills** — load custom `.md` instruction files that extend Claude's behaviour (e.g. enforce naming conventions, apply accessibility rules, build components a certain way)
+- **Image attachments** — attach screenshots or reference images to any message
+- **Chat history** — conversations are saved across sessions and can be resumed or deleted
 - **Persistent API key** — stored locally via `figma.clientStorage`, never leaves your machine
 
-## Setup
+## How it works
 
-1. Install dependencies:
-   ```bash
-   pnpm install
-   ```
-2. Start development build:
-   ```bash
-   pnpm dev
-   ```
-3. In Figma, open `Plugins` → `Development` → `Import plugin from manifest...` and select `public/manifest.json`.
-4. Run the plugin: `Plugins` → `Development` → `FigClaw`.
+1. You type a message (and optionally attach images) in the **Chat** tab.
+2. FigClaw sends your message plus the full conversation history to the Claude API directly from the plugin iframe.
+3. Claude decides which tools to call. The plugin executes them and returns results.
+4. This loop repeats until Claude stops using tools and sends a final reply.
+
+### Tools Claude can use
+
+The toolset is intentionally small. Rather than exposing a specific tool for every possible Figma operation, `run_figma_code` acts as a universal escape hatch — Claude writes and executes arbitrary JavaScript with full access to the `figma` global. The dedicated read tools exist purely for convenience, since reading canvas state is the most frequent operation and doesn't require writing code.
+
+| Tool             | Description                                                                                                                                                                                    |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `run_figma_code` | Executes arbitrary JavaScript in the Figma plugin sandbox — full access to the `figma` global and top-level `await`. Handles all writes and any operation not covered by the read tools below. |
+| `get_selection`  | Returns the currently selected nodes with all serialised properties                                                                                                                            |
+| `get_page_nodes` | Returns nodes on the current page up to a configurable depth                                                                                                                                   |
+| `get_node_by_id` | Returns a specific node by its Figma ID                                                                                                                                                        |
+| `get_styles`     | Lists all local paint, text, effect, and grid styles                                                                                                                                           |
+| `get_variables`  | Returns all local variable collections, modes, and resolved values — use before any design token work                                                                                          |
+| `get_components` | Lists all components and component sets on the current page                                                                                                                                    |
+| `get_pages`      | Lists all pages in the document with their id, name, and child node count                                                                                                                      |
+| `notify`         | Shows a toast notification inside Figma                                                                                                                                                        |
+| `fetch_docs`     | Fetches a Figma Plugin API reference page on demand so Claude always has the right signatures                                                                                                  |
+
+## Skills
+
+Skills are Markdown files that get injected into Claude's system prompt, giving it extra domain knowledge or behavioural rules for a session.
+
+The repository ships with several example skills in the `skills/` folder:
+
+| Skill                   | Description                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `accessibility.md`      | WCAG contrast checking and accessibility annotations                            |
+| `component-builder.md`  | Patterns for building production-ready components with variants and auto-layout |
+| `design-tokens.md`      | Creating and applying Figma Variables as design tokens                          |
+| `icon-exporter.md`      | Batch-exporting icons with consistent naming                                    |
+| `naming-conventions.md` | Enforcing layer naming rules                                                    |
+| `everything-is-pink.md` | Makes everything pink (demo)                                                    |
+| `pirate-mode.md`        | Claude responds like a pirate                                                   |
+| `uwu-mode.md`           | uwu                                                                             |
+| `overly-cautious.md`    | Claude adds excessive warnings to every action                                  |
+
+Load any `.md` file from the **Skills** tab — or write your own.
 
 ## Usage
 
-1. Paste your Claude API key (e.g. `sk-ant-...`) in the settings panel and click **Save**.
-2. Optionally change the model (default: `claude-sonnet-4-5`).
-3. Type a message and click **Send** — or attach an image first.
+1. Open the **Settings** tab, paste your Claude API key (`sk-ant-...`), and click **Save**.
+2. Optionally change the model (default: `claude-sonnet-4-6`).
+3. Optionally load a skill from the **Skills** tab.
+4. Switch to the **Chat** tab, type a message, and press **Send** — or attach an image first.
 
-Example prompts:
+The **History** tab shows all saved conversations. Click any entry to resume it.
 
-- _"Create a button component with auto layout"_
+### Example prompts
+
 - _"What's selected right now?"_
+- _"Create a button component with auto layout, padding 16/10, corner radius 8"_
 - _"Add a drop shadow to every frame on this page"_
 - _"Rename all layers that start with 'Frame' to use the component name instead"_
+- _"Check the contrast ratio of the text on the selected frame"_
+- _"Export all icons on this page as PNG at 2×"_
 
-## Build
+## System prompt
 
-```bash
-pnpm build
-```
+Claude's base instructions live in [src/system-prompt.md](src/system-prompt.md). It defines the agent's tools, a quick API reference, the step-by-step workflow, and the rules Claude follows. Editing that file is the fastest way to tweak how the agent behaves without touching any code.
 
-## Notes
+## Community
 
-- Network access is restricted to `https://api.anthropic.com` in the manifest.
-- Chat history is kept in the plugin UI session (it resets when the plugin window closes).
-- The agent may make multiple API calls per message as it works through a task — this counts against your Anthropic usage.
+Issues, ideas, and skill contributions are very welcome.
+
+- Found a bug or have a feature request? [Open an issue](https://github.com/PavelLaptev/figclaw/issues).
+- Want to share a skill you've written? Open a PR and add your `.md` file to the `skills/` folder — include a short description of what it does and I'll review it.
+- Have questions or want to discuss the project? Start a [GitHub Discussion](https://github.com/PavelLaptev/figclaw/discussions).
+
+## Contributing
+
+Interested in building locally, adding tools, or writing skills? See [CONTRIBUTING.md](CONTRIBUTING.md).

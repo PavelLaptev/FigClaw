@@ -8,6 +8,8 @@
   import ChatMessage from './components/ChatMessage.svelte';
   import Composer, { type AttachedImage } from './components/Composer.svelte';
   import EmptyChat from './components/EmptyChat.svelte';
+  import { TOOLS } from './tools';
+  import SYSTEM_PROMPT from './system-prompt.md?raw';
 
   // ─── Types ────────────────────────────────────────────────────────────────
   type ContentBlock =
@@ -49,10 +51,17 @@
   let apiKeyInput = $state('');
   let hasApiKey = $state(false);
   let statusMessage = $state('');
+  let shakeApiKey = $state(false);
   let model = $state('claude-sonnet-4-6');
   let prompt = $state('');
   let attachedImages = $state<AttachedImage[]>([]);
   let isSending = $state(false);
+  let abortController = $state<AbortController | null>(null);
+
+  function stopAgent() {
+    abortController?.abort();
+    abortController = null;
+  }
   let activeTab = $state<Tab>('chat');
 
   let skills = $state<Skill[]>([]);
@@ -64,203 +73,8 @@
 
   let messagesContainer = $state<HTMLElement | null>(null);
 
-  // ─── Tool definitions sent to Claude ─────────────────────────────────────
-  const TOOLS = [
-    {
-      name: 'fetch_docs',
-      description:
-        'Fetches a Figma Plugin API documentation page and returns its content. ' +
-        'Use this when you are unsure about an API type, property, or method signature. ' +
-        'For common operations (shapes, fills, text, auto-layout, selection) you already know the API — skip this tool. ' +
-        'HOW TO USE: ' +
-        '1) To find a slug, fetch the index: https://raw.githubusercontent.com/PavelLaptev/figma-api-snapshot/master/out/index.json ' +
-        '2) Then fetch the page: https://raw.githubusercontent.com/PavelLaptev/figma-api-snapshot/master/out/raw/plugin-api/{slug}.json ' +
-        'Common slug patterns: node types → docs__plugins__api__FrameNode | figma methods → docs__plugins__api__properties__figma-createframe | node props → docs__plugins__api__properties__nodes-fills | data types → docs__plugins__api__Paint',
-      input_schema: {
-        type: 'object',
-        properties: {
-          url: {
-            type: 'string',
-            description:
-              'URL to fetch. Use the snapshot repo URLs described above, e.g. https://raw.githubusercontent.com/PavelLaptev/figma-api-snapshot/master/out/raw/plugin-api/docs__plugins__api__FrameNode.json',
-          },
-        },
-        required: ['url'],
-      },
-    },
-    {
-      name: 'run_figma_code',
-      description:
-        'Executes arbitrary JavaScript in the Figma plugin context. ' +
-        'The code runs with full access to the `figma` global — all Plugin API methods are available. ' +
-        'Top-level `await` is supported (the code is wrapped in an async function). ' +
-        'Before calling this tool, ALWAYS show the code you are about to run in a text message so the user can see it. ' +
-        'IMPORTANT: To read a value back as the tool result, the code MUST end with an explicit `return` statement ' +
-        '(e.g. `return figma.currentPage.name`). Without a `return`, the result will always be `{ ok: true }` ' +
-        'regardless of what the code evaluates — never assume a value from the code unless it is explicitly returned.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          code: {
-            type: 'string',
-            description: 'Valid JavaScript to execute. Has access to the `figma` global.',
-          },
-          description: {
-            type: 'string',
-            description: 'One-line summary of what this code does (shown in the UI).',
-          },
-        },
-        required: ['code', 'description'],
-      },
-    },
-    {
-      name: 'get_selection',
-      description: 'Returns the currently selected nodes in Figma with all their properties.',
-      input_schema: { type: 'object', properties: {}, required: [] },
-    },
-    {
-      name: 'get_page_nodes',
-      description: 'Returns nodes on the current page up to a given depth.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          depth: { type: 'number', description: 'How many levels deep to traverse (default 2)' },
-        },
-        required: [],
-      },
-    },
-    {
-      name: 'get_node_by_id',
-      description: 'Returns full properties of a specific node by its Figma ID.',
-      input_schema: {
-        type: 'object',
-        properties: { id: { type: 'string', description: 'Figma node ID' } },
-        required: ['id'],
-      },
-    },
-    {
-      name: 'get_styles',
-      description: 'Returns all local paint and text styles defined in the document.',
-      input_schema: { type: 'object', properties: {}, required: [] },
-    },
-    {
-      name: 'notify',
-      description: 'Shows a toast notification inside Figma.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          message: { type: 'string' },
-          timeout: { type: 'number' },
-          error: { type: 'boolean' },
-        },
-        required: ['message'],
-      },
-    },
-  ] as const;
-
-  const SYSTEM_PROMPT = `You are an expert Figma design agent running inside a Figma plugin. You can read and manipulate the Figma document, create and edit nodes, manage styles and variables, and run arbitrary Plugin API code — all through the tools provided.
-
-## Tools available
-
-- run_figma_code — execute JavaScript in the Figma plugin sandbox. Full access to the \`figma\` global. Top-level await is supported. Always show the code in a fenced block before running it. **To read any value back you MUST use an explicit \`return\` statement** (e.g. \`return figma.currentPage.name\`). Without \`return\` the result is always \`{ ok: true }\` — never guess or infer a value that was not explicitly returned.
-- get_selection — read currently selected nodes with their serialised properties.
-- get_page_nodes — read top-level nodes on the current page (with optional depth).
-- get_node_by_id — read a specific node by its ID.
-- get_styles — list all local paint and text styles.
-- notify — show a toast in Figma.
-- fetch_docs — fetch a Figma Plugin API reference page. Use this whenever you are unsure about a type, property, or method signature.
-
-## Quick API reference (no need to look these up)
-
-// Creating nodes
-figma.createFrame() | createRectangle() | createEllipse() | createLine() | createText()
-figma.createComponent() | createComponentFromNode(node)
-figma.group(nodes, parent) | figma.flatten(nodes) | figma.ungroup(node)
-
-// Text — font MUST be loaded before setting .characters
-await figma.loadFontAsync({ family: "Inter", style: "Regular" })
-textNode.characters = "Hello"
-textNode.fontSize = 16
-
-// Common node properties
-node.x / node.y / node.width / node.height
-node.resize(w, h) | node.rescale(factor)
-node.name | node.visible | node.locked | node.opacity (0–1)
-node.fills = [{ type: 'SOLID', color: { r, g, b } }]   // r/g/b are 0–1 floats
-node.strokes = [{ type: 'SOLID', color: { r, g, b } }]
-node.strokeWeight | node.strokeAlign ('INSIDE'|'OUTSIDE'|'CENTER')
-node.effects = [{ type: 'DROP_SHADOW', color: {r,g,b,a}, offset: {x,y}, radius, visible: true }]
-node.cornerRadius | node.topLeftRadius | node.topRightRadius | node.bottomLeftRadius | node.bottomRightRadius
-node.blendMode | node.isMask
-node.exportAsync({ format: 'PNG' | 'SVG' | 'PDF', constraint: { type: 'SCALE', value: 2 } })
-
-// Auto-layout (FrameNode)
-frame.layoutMode = 'HORIZONTAL' | 'VERTICAL' | 'NONE'
-frame.primaryAxisSizingMode = 'FIXED' | 'AUTO'
-frame.counterAxisSizingMode = 'FIXED' | 'AUTO'
-frame.primaryAxisAlignItems = 'MIN' | 'CENTER' | 'MAX' | 'SPACE_BETWEEN'
-frame.counterAxisAlignItems = 'MIN' | 'CENTER' | 'MAX' | 'BASELINE'
-frame.paddingLeft | paddingRight | paddingTop | paddingBottom
-frame.itemSpacing | frame.layoutWrap = 'NO_WRAP' | 'WRAP'
-child.layoutSizingHorizontal = 'FIXED' | 'HUG' | 'FILL'
-child.layoutSizingVertical  = 'FIXED' | 'HUG' | 'FILL'
-
-// Tree & selection
-figma.currentPage.selection          // read selected nodes
-figma.currentPage.selection = [node] // set selection
-figma.currentPage.children           // top-level nodes
-parent.appendChild(child) | parent.insertChild(index, child)
-node.remove() | figma.getNodeById(id)
-
-// Styles
-figma.getLocalPaintStyles() | getLocalTextStyles() | getLocalEffectStyles()
-figma.createPaintStyle() | createTextStyle()
-style.name | style.paints | style.fontSize | style.fontName
-
-// Variables (design tokens)
-figma.variables.getLocalVariables() | getLocalVariableCollections()
-figma.variables.createVariable(name, collectionId, resolvedType)
-figma.variables.createVariableCollection(name)
-variable.setValueForMode(modeId, value)
-node.setBoundVariable('fills', variable)
-
-// Misc
-figma.notify("message", { timeout: 3000, error: false })
-figma.closePlugin()
-figma.currentPage.name | figma.root.name
-
-## Workflow
-
-1. UNDERSTAND — if you need to inspect the canvas, call get_selection or get_page_nodes first.
-2. LOOK UP DOCS (when unsure) — call fetch_docs before writing code for unfamiliar APIs. See "API docs" section below.
-3. SHOW CODE — always display the code in a \`\`\`js block in a text message before executing.
-4. RUN — call run_figma_code with that exact code.
-5. REPORT — briefly summarise what happened or what changed.
-
-If run_figma_code returns an error: read it carefully, fix the code, and retry. Only fetch docs if the error suggests a wrong API name or signature.
-
-## API docs (fetch on demand)
-
-The full Figma Plugin API is available as a snapshot at:
-- Slug index: https://raw.githubusercontent.com/PavelLaptev/figma-api-snapshot/master/out/index.json
-- Page template: https://raw.githubusercontent.com/PavelLaptev/figma-api-snapshot/master/out/raw/plugin-api/{slug}.json
-
-Slug patterns:
-- Node types      → docs__plugins__api__FrameNode  /  docs__plugins__api__TextNode
-- figma.* methods → docs__plugins__api__properties__figma-createframe
-- Node properties → docs__plugins__api__properties__nodes-fills
-- Data types      → docs__plugins__api__Paint  /  docs__plugins__api__Effect
-- Sub-namespaces  → docs__plugins__api__figma-variables  /  docs__plugins__api__figma-ui
-
-If unsure of the slug, fetch the index first, search for the relevant title, then fetch that page.
-
-## Rules
-- Code must be self-contained — never reference variables from previous tool calls.
-- Always load fonts before setting text content.
-- Use get_selection before mutating selected nodes.
-- Prefer run_figma_code for all writes; use the read tools (get_selection, get_page_nodes, etc.) for inspecting state.
-- Keep responses concise. Show code, run it, report the outcome.
-- **Always use an explicit \`return\` statement when reading a value** (e.g. \`return figma.currentPage.name\`). Code without \`return\` always yields \`{ ok: true }\` — never state a value you haven't seen in the tool result.`;
+  // SYSTEM_PROMPT is imported from ./system-prompt.md at build time.
+  // Edit that file to change Claude's base behaviour.
 
   // ─── Default skill (built-in system prompt) ─────────────────────────────
   const DEFAULT_SKILL: Skill = {
@@ -333,11 +147,29 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
   }
 
   // ─── Claude API call (fetch lives here in the iframe — no CORS issue) ─────
+
+  // Remove any trailing assistant message that has tool_use blocks without a
+  // following tool_result — this happens when the agent is stopped mid-loop.
+  function sanitizeHistory(history: ApiMessage[]): ApiMessage[] {
+    const last = history[history.length - 1];
+    if (
+      last &&
+      last.role === 'assistant' &&
+      Array.isArray(last.content) &&
+      last.content.some((b) => b.type === 'tool_use')
+    ) {
+      return history.slice(0, -1);
+    }
+    return history;
+  }
+
   async function callClaude(
-    history: ApiMessage[]
+    history: ApiMessage[],
+    signal?: AbortSignal
   ): Promise<{ content: ContentBlock[]; stop_reason: string }> {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal,
       headers: {
         'content-type': 'application/json',
         'x-api-key': storedApiKey,
@@ -380,6 +212,8 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
     }
 
     isSending = true;
+    abortController = new AbortController();
+    const signal = abortController.signal;
     pushDisplay({ role: 'user', text: userText, images: images.map((i) => i.dataUrl) });
 
     // Build multipart content if images are attached
@@ -403,13 +237,14 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
     }
 
     const userMsg: ApiMessage = { role: 'user', content: userContent };
-    const history: ApiMessage[] = [...apiHistory, userMsg];
+    const history: ApiMessage[] = [...sanitizeHistory(apiHistory), userMsg];
 
     try {
       let keepGoing = true;
       while (keepGoing) {
+        if (signal.aborted) break;
         statusMessage = 'Claude is thinking...';
-        const response = await callClaude(history);
+        const response = await callClaude(history, signal);
         const assistantMsg: ApiMessage = { role: 'assistant', content: response.content };
         history.push(assistantMsg);
 
@@ -478,15 +313,22 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
         statusMessage = 'Processing tool results...';
       }
 
-      apiHistory = history;
-      statusMessage = 'Done.';
+      apiHistory = sanitizeHistory(history);
+      statusMessage = signal.aborted ? 'Stopped.' : 'Done.';
       upsertCurrentChat();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      statusMessage = 'Error: ' + msg;
-      pushDisplay({ role: 'assistant', text: 'Error: ' + msg });
+      if (err instanceof Error && err.name === 'AbortError') {
+        statusMessage = 'Stopped.';
+        apiHistory = sanitizeHistory(history);
+        upsertCurrentChat();
+      } else {
+        const msg = err instanceof Error ? err.message : String(err);
+        statusMessage = 'Error: ' + msg;
+        pushDisplay({ role: 'assistant', text: 'Error: ' + msg });
+      }
     } finally {
       isSending = false;
+      abortController = null;
     }
   }
 
@@ -494,6 +336,12 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
     const text = prompt.trim();
     const images = attachedImages.slice();
     if ((!text && images.length === 0) || isSending) return;
+    if (!storedApiKey) {
+      activeTab = 'settings';
+      shakeApiKey = false;
+      setTimeout(() => (shakeApiKey = true), 50);
+      return;
+    }
     prompt = '';
     attachedImages = [];
     await runAgentLoop(text, images);
@@ -646,6 +494,7 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
       {hasApiKey}
       keyLoaded={Boolean(storedApiKey)}
       apiKey={storedApiKey}
+      shake={shakeApiKey}
       onSave={() => sendToPlugin({ type: 'save-api-key', apiKey: apiKeyInput })}
       onRemove={() => sendToPlugin({ type: 'save-api-key', apiKey: '' })}
     />
@@ -682,7 +531,7 @@ If unsure of the slug, fetch the index first, search for the relevant title, the
       <p class="status">{statusMessage}</p>
     {/if}
 
-    <Composer bind:prompt bind:attachedImages {isSending} onSend={sendMessage} />
+    <Composer bind:prompt bind:attachedImages {isSending} onSend={sendMessage} onStop={stopAgent} />
   {/if}
 </main>
 

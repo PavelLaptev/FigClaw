@@ -140,6 +140,7 @@
     background: var(--color-surface-1);
     padding: 4px 10px;
     font-size: 10px;
+    gap: 6px;
     opacity: 0.6;
     font-family: monospace;
     cursor: pointer;
@@ -176,10 +177,10 @@
   /* Tool call pill */
   .tool-call {
     display: flex;
-    align-items: center;
     gap: 6px;
     font-size: 11px;
-    padding: 4px 8px;
+    line-height: 1.4;
+    padding: 6px 8px;
     border-radius: var(--radius-pill);
     background: var(--color-surface-1);
     border: 1px solid var(--color-border-1);

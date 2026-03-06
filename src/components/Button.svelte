@@ -11,7 +11,14 @@
     'aria-pressed'?: boolean;
   }
 
-  let { children, onclick, variant = 'primary', disabled = false, title, 'aria-pressed': ariaPressed }: Props = $props();
+  let {
+    children,
+    onclick,
+    variant = 'primary',
+    disabled = false,
+    title,
+    'aria-pressed': ariaPressed,
+  }: Props = $props();
 </script>
 
 <button class="btn btn--{variant}" {onclick} {disabled} {title} aria-pressed={ariaPressed}>

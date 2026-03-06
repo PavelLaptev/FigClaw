@@ -9,17 +9,20 @@
     attachedImages = $bindable<AttachedImage[]>([]),
     isSending,
     onSend,
+    onStop,
   }: {
     prompt: string;
     attachedImages: AttachedImage[];
     isSending: boolean;
     onSend: () => void;
+    onStop?: () => void;
   } = $props();
 
   let fileInput: HTMLInputElement | null = null;
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       onSend();
     }
   }
@@ -101,12 +104,17 @@
         style="display:none"
         onchange={handleFileChange}
       />
-      <Button variant="primary" onclick={onSend} disabled={isSending}>
-        {isSending ? 'Working...' : 'Send'}
-        {#if !isSending}
+      {#if isSending}
+        <Button variant="outline" onclick={onStop}>
+          <Icon name="close" />
+          Stop
+        </Button>
+      {:else}
+        <Button variant="primary" onclick={onSend}>
+          Send
           <Icon name="arrow-up" />
-        {/if}
-      </Button>
+        </Button>
+      {/if}
     </div>
   </section>
 </div>

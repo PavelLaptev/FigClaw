@@ -18,6 +18,7 @@
     hasApiKey,
     keyLoaded,
     apiKey = '',
+    shake = false,
     onSave,
     onRemove,
   }: {
@@ -26,6 +27,7 @@
     hasApiKey: boolean;
     keyLoaded: boolean;
     apiKey?: string;
+    shake?: boolean;
     onSave: () => void;
     onRemove: () => void;
   } = $props();
@@ -86,7 +88,7 @@
 </script>
 
 <section class="settings">
-  <div class="input-wrap">
+  <div class="input-wrap" class:shake>
     <div class="model-label-row">
       <label for="api-key">Claude API key</label>
       {#if hasApiKey}
@@ -115,6 +117,13 @@
         <Button variant="primary" onclick={onSave}>Save key</Button>
       {/if}
     </div>
+    {#if !hasApiKey}
+      <p class="hint">
+        Get your API key at <a href="https://console.anthropic.com/settings/keys" target="_blank"
+          >console.anthropic.com</a
+        >
+      </p>
+    {/if}
   </div>
 
   {#if apiKey}
@@ -159,9 +168,44 @@
     gap: 10px;
   }
 
+  .shake {
+    animation: shake 0.4s ease;
+  }
+
+  @keyframes shake {
+    0% {
+      transform: translateX(0);
+    }
+    20% {
+      transform: translateX(-6px);
+    }
+    40% {
+      transform: translateX(6px);
+    }
+    60% {
+      transform: translateX(-4px);
+    }
+    80% {
+      transform: translateX(4px);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+
   .model-label-row {
     display: flex;
     align-items: center;
     gap: 10px;
+  }
+
+  .hint {
+    margin: 0;
+    font-size: 11px;
+    opacity: 0.4;
+  }
+
+  .hint a {
+    color: inherit;
   }
 </style>

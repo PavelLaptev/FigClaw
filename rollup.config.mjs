@@ -1,85 +1,109 @@
-import svelte from "rollup-plugin-svelte";
-import resolve from "@rollup/plugin-node-resolve";
-import commonjs from "@rollup/plugin-commonjs";
-import livereload from "rollup-plugin-livereload";
-import terser from "@rollup/plugin-terser";
+import svelte from 'rollup-plugin-svelte';
+import resolve from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import livereload from 'rollup-plugin-livereload';
+import terser from '@rollup/plugin-terser';
 import typescript from '@rollup/plugin-typescript';
 
 /* Post CSS */
-import postcss from "rollup-plugin-postcss";
-import cssnano from "cssnano";
-import autoprefixer from "autoprefixer";
+import postcss from 'rollup-plugin-postcss';
+import cssnano from 'cssnano';
+import autoprefixer from 'autoprefixer';
 
 /* Inline to single html */
-import htmlBundle from "rollup-plugin-html-bundle";
+import htmlBundle from 'rollup-plugin-html-bundle';
+
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+
+/** Handles `import text from './file.md?raw'` — returns the file contents as a JS string. */
+function rawMd() {
+  return {
+    name: 'raw-md',
+    resolveId(source, importer) {
+      if (!source.endsWith('?raw') || !importer) return null;
+      return join(dirname(importer), source.slice(0, -4)) + '?raw';
+    },
+    load(id) {
+      if (!id.endsWith('?raw')) return null;
+      const file = id.slice(0, -4);
+      const content = readFileSync(file, 'utf-8');
+      return `export default ${JSON.stringify(content)};`;
+    },
+  };
+}
 
 const production = !process.env.ROLLUP_WATCH;
 
 export default [
-    {
-        input: "src/main.js",
-        output: {
-            format: "iife",
-            name: "ui",
-            file: "public/build/bundle.js",
-        },
-        plugins: [
-            svelte({
-                compilerOptions: {
-                    dev: !production,
-                },
-            }),
-
-            // If you have external dependencies installed from
-            // npm, you'll most likely need these plugins. In
-            // some cases you'll need additional configuration —
-            // consult the documentation for details:¡
-            // https://github.com/rollup/plugins/tree/master/packages/commonjs
-            resolve({
-                browser: true,
-                dedupe: (importee) =>
-                    importee === "svelte" || importee.startsWith("svelte/"),
-                extensions: [".svelte", ".mjs", ".js", ".ts", ".json", ".node"],
-            }),
-            commonjs(),
-            typescript({
-                tsconfig: "./tsconfig.json",
-                sourceMap: !production,
-                declaration: false,
-            }),
-            postcss({
-                extensions: [".css"],
-                plugins: [cssnano(), autoprefixer()],
-            }),
-            htmlBundle({
-                template: "src/template.html",
-                target: "public/index.html",
-                inline: true,
-            }),
-
-            // Watch the `dist` directory and refresh the
-            // browser on changes when not in production
-            !production && livereload("public"),
-
-            // If we're building for production (npm run build
-            // instead of npm run dev), minify
-            production && terser(),
-        ],
-        watch: {
-            clearScreen: false,
-        },
+  {
+    input: 'src/main.js',
+    output: {
+      format: 'iife',
+      name: 'ui',
+      file: 'public/build/bundle.js',
     },
-    {
-        input: "src/code.ts",
-        output: {
-            file: "public/code.js",
-            format: "cjs",
-            name: "code",
+    plugins: [
+      rawMd(),
+      svelte({
+        compilerOptions: {
+          dev: !production,
         },
-        plugins: [typescript({
-            tsconfig: "./tsconfig.json",
-            sourceMap: false,
-            declaration: false
-        }), commonjs(), production && terser()],
+      }),
+
+      // If you have external dependencies installed from
+      // npm, you'll most likely need these plugins. In
+      // some cases you'll need additional configuration —
+      // consult the documentation for details:¡
+      // https://github.com/rollup/plugins/tree/master/packages/commonjs
+      resolve({
+        browser: true,
+        dedupe: (importee) => importee === 'svelte' || importee.startsWith('svelte/'),
+        extensions: ['.svelte', '.mjs', '.js', '.ts', '.json', '.node'],
+      }),
+      commonjs(),
+      typescript({
+        tsconfig: './tsconfig.json',
+        sourceMap: !production,
+        declaration: false,
+      }),
+      postcss({
+        extensions: ['.css'],
+        plugins: [cssnano(), autoprefixer()],
+      }),
+      htmlBundle({
+        template: 'src/template.html',
+        target: 'public/index.html',
+        inline: true,
+      }),
+
+      // Watch the `dist` directory and refresh the
+      // browser on changes when not in production
+      !production && livereload('public'),
+
+      // If we're building for production (npm run build
+      // instead of npm run dev), minify
+      production && terser(),
+    ],
+    watch: {
+      clearScreen: false,
     },
+  },
+  {
+    input: 'src/code.ts',
+    output: {
+      file: 'public/code.js',
+      format: 'cjs',
+      name: 'code',
+    },
+    plugins: [
+      typescript({
+        tsconfig: './tsconfig.json',
+        sourceMap: false,
+        declaration: false,
+      }),
+      commonjs(),
+      production && terser(),
+    ],
+  },
 ];
