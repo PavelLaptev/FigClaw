@@ -115,6 +115,53 @@ export const TOOLS = [
     },
   },
   {
+    name: 'create_skill',
+    description:
+      'Creates a new custom skill and saves it to the plugin. ' +
+      'Use this when the user asks to create, add, or generate a new skill document. ' +
+      'Skills are instruction documents that shape how the plugin behaves for specific tasks.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Name for the new skill (without file extension).',
+        },
+        content: {
+          type: 'string',
+          description: 'Full markdown content for the skill.',
+        },
+      },
+      required: ['name', 'content'],
+    },
+  },
+  {
+    name: 'update_skill',
+    description:
+      'Updates the content of an existing custom skill that the user has uploaded. ' +
+      'Use this when the user asks to modify, improve, or update one of their loaded skills. ' +
+      'You can only update skills the user has already uploaded — you cannot create new ones with this tool. ' +
+      'To find available skill ids and names, they are listed in the system prompt under "Custom Skills".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'The id of the skill to update.',
+        },
+        name: {
+          type: 'string',
+          description: 'The new name for the skill (without file extension).',
+        },
+        content: {
+          type: 'string',
+          description: 'The full updated content for the skill.',
+        },
+      },
+      required: ['id', 'content'],
+    },
+  },
+  {
     name: 'download_files',
     description:
       "Triggers a file download in the user's browser from inside the plugin. " +

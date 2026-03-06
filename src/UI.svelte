@@ -182,7 +182,11 @@
 
   function getZipFileName(files: DownloadFilePayload[]): string {
     const dateStamp = new Date().toISOString().slice(0, 10);
-    const svgOnly = files.every((f) => String(f.filename || '').toLowerCase().endsWith('.svg'));
+    const svgOnly = files.every((f) =>
+      String(f.filename || '')
+        .toLowerCase()
+        .endsWith('.svg')
+    );
     return svgOnly ? `icons-export-${dateStamp}.zip` : `figclaw-export-${dateStamp}.zip`;
   }
 
@@ -291,9 +295,9 @@
   function buildSystemPrompt(): string {
     if (skills.length === 0) return SYSTEM_PROMPT;
     const skillsSection = skills
-      .map((s) => `### Skill: ${s.name}\n\n${s.content}`)
+      .map((s) => `### Skill: ${s.name} (id: ${s.id})\n\n${s.content}`)
       .join('\n\n---\n\n');
-    return `${SYSTEM_PROMPT}\n\n## Custom Skills\n\nThe user has provided the following custom skill documents. Use them as additional context and instructions:\n\n${skillsSection}`;
+    return `${SYSTEM_PROMPT}\n\n## Custom Skills\n\nThe user has provided the following custom skill documents. Use them as additional context and instructions. Each skill has an id you can use with the \`update_skill\` tool to modify it.\n\n${skillsSection}`;
   }
 
   // ─── Claude API call (fetch lives here in the iframe — no CORS issue) ─────
@@ -567,6 +571,11 @@
     persistSkills(skills);
   }
 
+  function updateSkill(id: string, updates: Partial<Skill>) {
+    skills = skills.map((s) => (s.id === id ? { ...s, ...updates } : s));
+    persistSkills(skills);
+  }
+
   // ─── Plugin message handler ───────────────────────────────────────────────
   onmessage = (event) => {
     const msg = event.data.pluginMessage;
@@ -596,6 +605,18 @@
       if (Array.isArray(msg.skills)) {
         skills = msg.skills as Skill[];
       }
+      return;
+    }
+
+    if (msg.type === 'skills-updated') {
+      if (Array.isArray(msg.skills)) {
+        skills = msg.skills as Skill[];
+      }
+      return;
+    }
+
+    if (msg.type === 'skill-update-error') {
+      statusMessage = 'Skill update failed: ' + String(msg.error);
       return;
     }
 
@@ -650,7 +671,6 @@
       bind:apiKeyInput
       bind:model
       {hasApiKey}
-      keyLoaded={Boolean(storedApiKey)}
       apiKey={storedApiKey}
       shake={shakeApiKey}
       onSave={() => sendToPlugin({ type: 'save-api-key', apiKey: apiKeyInput })}

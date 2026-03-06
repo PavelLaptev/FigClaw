@@ -16,7 +16,7 @@
     apiKeyInput = $bindable(''),
     model = $bindable(''),
     hasApiKey,
-    keyLoaded,
+
     apiKey = '',
     shake = false,
     onSave,
@@ -25,7 +25,6 @@
     apiKeyInput: string;
     model: string;
     hasApiKey: boolean;
-    keyLoaded: boolean;
     apiKey?: string;
     shake?: boolean;
     onSave: () => void;

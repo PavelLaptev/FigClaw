@@ -1,5 +1,7 @@
 # FigClaw
 
+[![FigClaw cover](cover.jpg)](https://www.figma.com/community/plugin/1610744892832367485/figclaw)
+
 > Available on the [Figma Community](https://www.figma.com/community/plugin/1610744892832367485/figclaw)
 
 FigClaw is an agentic Claude-powered Figma plugin that lets you chat with your canvas, inspect and manipulate nodes, and execute Figma Plugin API code — all from within Figma.
@@ -16,7 +18,7 @@ Figma's Plugin API is powerful, but writing plugins can be a chore — especiall
 - **Canvas inspection** — read the current selection or the full page node tree
 - **Code execution** — run arbitrary Figma Plugin API code with full `await` support
 - **Doc lookup** — fetches Figma API docs on demand so Claude always has the right signatures
-- **Skills** — load custom `.md` instruction files that extend Claude's behaviour (e.g. enforce naming conventions, apply accessibility rules, build components a certain way)
+- **Skills** — load custom `.md` instruction files that extend Claude's behaviour (e.g. enforce naming conventions, apply accessibility rules, build components a certain way); Claude can also create and update skills on your behalf
 - **Image attachments** — attach screenshots or reference images to any message
 - **Chat history** — conversations are saved across sessions and can be resumed or deleted
 - **Persistent API key** — stored locally via `figma.clientStorage`, never leaves your machine
@@ -43,12 +45,21 @@ The toolset is intentionally small. Rather than exposing a specific tool for eve
 | `get_components` | Lists all components and component sets on the current page                                                                                                                                    |
 | `get_pages`      | Lists all pages in the document with their id, name, and child node count                                                                                                                      |
 | `notify`         | Shows a toast notification inside Figma                                                                                                                                                        |
-| `download_files` | Triggers a file download in the user's browser — use for exporting SVGs, PNGs, or any other binary/text data to disk                                                                          |
+| `download_files` | Triggers a file download in the user's browser — use for exporting SVGs, PNGs, or any other binary/text data to disk                                                                           |
 | `fetch_docs`     | Fetches a Figma Plugin API reference page on demand so Claude always has the right signatures                                                                                                  |
+| `create_skill`   | Creates a new skill document and saves it to the plugin — Claude can write skills from scratch based on your instructions                                                                      |
+| `update_skill`   | Updates the name and/or content of an existing loaded skill — ask Claude to refine a skill and it will persist the changes immediately                                                         |
 
 ## Skills
 
 Skills are Markdown files that get injected into Claude's system prompt, giving it extra domain knowledge or behavioural rules for a session.
+
+Claude can manage skills directly during a conversation:
+
+- **Create** — _"Create a skill for how I like to name layers"_ → Claude writes the markdown and saves it as a new skill.
+- **Update** — _"Update the naming-conventions skill to also cover component variants"_ → Claude edits the skill content in place.
+
+You can also upload your own `.md` files manually from the **Skills** tab.
 
 The repository ships with several example skills in the `skills/` folder:
 
@@ -82,6 +93,8 @@ The **History** tab shows all saved conversations. Click any entry to resume it.
 - _"Rename all layers that start with 'Frame' to use the component name instead"_
 - _"Check the contrast ratio of the text on the selected frame"_
 - _"Export all icons on this page as PNG at 2×"_
+- _"Create a skill that enforces 8pt spacing rules"_
+- _"Update my component-builder skill to also handle auto-layout variants"_
 
 ## System prompt
 

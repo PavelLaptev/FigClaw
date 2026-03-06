@@ -279,6 +279,42 @@ async function executeTool(name: string, input: Record<string, unknown>): Promis
       return { notified: true };
     }
 
+    case 'create_skill': {
+      const name = String(input.name || '').trim();
+      const content = String(input.content || '');
+      if (!name) return { error: 'name is required.' };
+      const newSkill: Record<string, unknown> = {
+        id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = (Math.random() * 16) | 0;
+          return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+        }),
+        name,
+        content,
+        fileName: `${name}.md`,
+        addedAt: Date.now(),
+      };
+      const allSkills = (await getSkills()) as Array<Record<string, unknown>>;
+      allSkills.push(newSkill);
+      await saveSkills(allSkills);
+      figma.ui.postMessage({ type: 'skills-updated', skills: allSkills });
+      return { created: true, id: newSkill.id, name: newSkill.name };
+    }
+
+    case 'update_skill': {
+      const id = String(input.id || '');
+      const content = String(input.content || '');
+      const newName = input.name !== undefined ? String(input.name) : undefined;
+      if (!id) return { error: 'id is required.' };
+      const allSkills = (await getSkills()) as Array<Record<string, unknown>>;
+      const idx = allSkills.findIndex((s) => s.id === id);
+      if (idx === -1) return { error: `Skill with id "${id}" not found.` };
+      if (newName !== undefined) allSkills[idx].name = newName;
+      allSkills[idx].content = content;
+      await saveSkills(allSkills);
+      figma.ui.postMessage({ type: 'skills-updated', skills: allSkills });
+      return { updated: true, id, name: allSkills[idx].name };
+    }
+
     case 'download_files': {
       const files = Array.isArray(input.files) ? input.files : [];
       if (files.length === 0) return { error: 'No files provided.' };
