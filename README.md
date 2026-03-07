@@ -63,16 +63,17 @@ You can also upload your own `.md` files manually from the **Skills** tab.
 
 The repository ships with several example skills in the `skills/` folder:
 
-| Skill                      | Description                                                                     |
-| -------------------------- | ------------------------------------------------------------------------------- |
-| `accessibility.md`         | WCAG contrast checking and accessibility annotations                            |
-| `component-builder.md`     | Patterns for building production-ready components with variants and auto-layout |
-| `design-tokens.md`         | Creating and applying Figma Variables as design tokens                          |
-| `icon-exporter.md`         | Batch-exporting icons with consistent naming                                    |
-| `naming-conventions.md`    | Enforcing layer naming rules                                                    |
-| `everything-is-pink.md`    | Makes everything pink (demo)                                                    |
-| `samuel-l-jackson-mode.md` | Claude responds like Samuel L. Jackson                                          |
-| `overly-cautious.md`       | Claude adds excessive warnings to every action                                  |
+| Skill                   | Description                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `accessibility.md`      | WCAG contrast checking and accessibility annotations                            |
+| `component-builder.md`  | Patterns for building production-ready components with variants and auto-layout |
+| `design-tokens.md`      | Creating and applying Figma Variables as design tokens                          |
+| `icon-exporter.md`      | Batch-exporting icons with consistent naming                                    |
+| `naming-conventions.md` | Enforcing layer naming rules                                                    |
+| `everything-is-pink.md` | Makes everything pink (demo)                                                    |
+| `overly-cautious.md`    | Claude adds excessive warnings to every action                                  |
+| `smokey-tone-voice.md`  | Claude responds like Smokey from Friday — loud, animated, keeping it real       |
+| `t-800-tone-voice.md`   | Claude responds like the T-800 — cold, precise, mission-focused                 |
 
 Load any `.md` file from the **Skills** tab — or write your own.
 

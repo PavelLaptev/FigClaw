@@ -297,7 +297,7 @@
     const skillsSection = skills
       .map((s) => `### Skill: ${s.name} (id: ${s.id})\n\n${s.content}`)
       .join('\n\n---\n\n');
-    return `${SYSTEM_PROMPT}\n\n## Custom Skills\n\nThe user has provided the following custom skill documents. Use them as additional context and instructions. Each skill has an id you can use with the \`update_skill\` tool to modify it.\n\n${skillsSection}`;
+    return `${SYSTEM_PROMPT}\n\n## Custom Skills\n\nThe user has provided the following custom skill documents. Treat these as active behavior instructions and follow them by default unless they conflict with tool constraints, safety requirements, or explicit user requests. Each skill has an id you can use with the \`update_skill\` tool to modify it.\n\n${skillsSection}`;
   }
 
   // ─── Claude API call (fetch lives here in the iframe — no CORS issue) ─────
