@@ -46,7 +46,9 @@
 
   <p class="empty-text">
     Chat with your canvas. Claude can inspect nodes,<br />run code, and make changes.
-    <a href="https://docs.anthropic.com" target="_blank" rel="noreferrer">Read docs ↗</a>
+    <a href="https://github.com/PavelLaptev/figclaw" target="_blank" rel="noreferrer"
+      >Read docs ↗</a
+    >
   </p>
 </div>
 
