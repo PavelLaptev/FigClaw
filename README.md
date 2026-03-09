@@ -74,7 +74,6 @@ The repository ships with several example skills in the `skills/` folder:
 | `overly-cautious.md`    | Claude adds excessive warnings to every action                                  |
 | `smokey-mode.md`        | Claude responds like Smokey from Friday — loud, animated, keeping it real       |
 | `t-800-mode.md`         | Claude responds like the T-800 — cold, precise, mission-focused                 |
-| `uwu-mode.md`           | Claude responds in full UwU internet speak — hyper-cute, affectionate, adorable |
 
 Load any `.md` file from the **Skills** tab — or write your own.
 
