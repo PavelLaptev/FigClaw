@@ -16,9 +16,11 @@ Figma's Plugin API is powerful, but writing plugins can be a chore — especiall
 
 - **Agentic loop** — Claude autonomously calls tools, reads results, and iterates until the task is done
 - **Canvas inspection** — read the current selection or the full page node tree
-- **Code execution** — run arbitrary Figma Plugin API code with full `await` support
+- **Generated code execution** — Claude writes arbitrary Figma Plugin API code and immediately executes it in the plugin sandbox (full `await` support)
 - **Doc lookup** — fetches Figma API docs on demand so Claude always has the right signatures
-- **Skills** — load custom `.md` instruction files that extend Claude's behaviour (e.g. enforce naming conventions, apply accessibility rules, build components a certain way); Claude can also create and update skills on your behalf
+- **Skills** — load custom `.md` instruction files that extend Claude's behaviour (e.g. enforce naming conventions, apply accessibility rules, build components a certain way)
+- **In-plugin skill authoring** — create and update skills directly from chat inside the plugin
+- **Skill modes** — set each custom skill to `active` (always on) or `passive` (invoked only when mentioned)
 - **Image attachments** — attach screenshots or reference images to any message
 - **Chat history** — conversations are saved across sessions and can be resumed or deleted
 - **Persistent API key** — stored locally via `figma.clientStorage`, never leaves your machine
@@ -54,12 +56,31 @@ The toolset is intentionally small. Rather than exposing a specific tool for eve
 
 Skills are Markdown files that get injected into Claude's system prompt, giving it extra domain knowledge or behavioural rules for a session.
 
+Each custom skill has a mode:
+
+- **Active** — always-on. The skill is injected into every conversation turn as persistent behaviour.
+- **Passive** — on-demand. The skill is ignored unless you explicitly call it with an `@mention` in your message.
+
+You can toggle a skill's mode from the **Skills** tab by clicking its mode badge (`active` / `passive`).
+
 Claude can manage skills directly during a conversation:
 
 - **Create** — _"Create a skill for how I like to name layers"_ → Claude writes the markdown and saves it as a new skill.
 - **Update** — _"Update the naming-conventions skill to also cover component variants"_ → Claude edits the skill content in place.
 
 You can also upload your own `.md` files manually from the **Skills** tab.
+
+### Calling passive skills
+
+Passive skills are invoked with `@skill-name` in the chat composer.
+
+- Type `@` in the message box to open skill autocomplete.
+- Pick the skill (or type its full name) and send your message.
+- The mention token is removed before execution, and that skill's content is injected only for that request.
+
+Example:
+
+- `@design-tokens Create color variables for light and dark mode.`
 
 The repository ships with several example skills in the `skills/` folder:
 
@@ -75,13 +96,13 @@ The repository ships with several example skills in the `skills/` folder:
 | `smokey-mode.md`        | Claude responds like Smokey from Friday — loud, animated, keeping it real       |
 | `t-800-mode.md`         | Claude responds like the T-800 — cold, precise, mission-focused                 |
 
-Load any `.md` file from the **Skills** tab — or write your own.
+Load any `.md` file from the **Skills** tab, write your own, or grab one of the examples above directly from the [`skills/` folder on GitHub](https://github.com/PavelLaptev/FigClaw/tree/main/skills).
 
 ## Usage
 
 1. Open the **Settings** tab, paste your Claude API key (`sk-ant-...`), and click **Save**.
 2. Optionally change the model (default: `claude-sonnet-4-6`).
-3. Optionally load a skill from the **Skills** tab.
+3. Optionally load a skill from the **Skills** tab, and set it to `active` (always-on) or `passive` (on-demand via `@mention`).
 4. Switch to the **Chat** tab, type a message, and press **Send** — or attach an image first.
 
 The **History** tab shows all saved conversations. Click any entry to resume it.

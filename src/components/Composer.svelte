@@ -3,16 +3,19 @@
   import Icon from './Icon.svelte';
 
   export type AttachedImage = { dataUrl: string; mediaType: string; name: string };
+  type Skill = { id: string; name: string; content: string };
 
   let {
     prompt = $bindable(''),
     attachedImages = $bindable<AttachedImage[]>([]),
+    skills = [],
     isSending,
     onSend,
     onStop,
   }: {
     prompt: string;
     attachedImages: AttachedImage[];
+    skills?: Skill[];
     isSending: boolean;
     onSend: () => void;
     onStop?: () => void;
@@ -21,11 +24,107 @@
   let fileInput: HTMLInputElement | null = null;
   let textarea: HTMLTextAreaElement | null = null;
 
+  // ─── @mention autocomplete ────────────────────────────────────────────────
+  let mentionQuery = $state('');
+  let mentionStart = $state(-1);
+  let showDropdown = $state(false);
+  let selectedIndex = $state(0);
+
+  let filteredSkills = $derived(
+    mentionQuery === ''
+      ? skills
+      : skills.filter((s) => s.name.toLowerCase().includes(mentionQuery.toLowerCase()))
+  );
+
+  $effect(() => {
+    // reset selection when list changes
+    selectedIndex = 0;
+  });
+
+  function detectMention(value: string, cursorPos: number) {
+    const textBefore = value.slice(0, cursorPos);
+    const atIdx = textBefore.lastIndexOf('@');
+    if (atIdx === -1) {
+      showDropdown = false;
+      mentionStart = -1;
+      return;
+    }
+    // only open if no space between @ and cursor
+    const fragment = textBefore.slice(atIdx + 1);
+    if (/\s/.test(fragment)) {
+      showDropdown = false;
+      mentionStart = -1;
+      return;
+    }
+    mentionStart = atIdx;
+    mentionQuery = fragment;
+    showDropdown = skills.length > 0;
+  }
+
+  function insertMention(skill: Skill) {
+    if (!textarea) return;
+    const before = prompt.slice(0, mentionStart);
+    const after = prompt.slice(textarea.selectionStart);
+    const inserted = `@${skill.name} `;
+    prompt = before + inserted + after;
+    showDropdown = false;
+    mentionStart = -1;
+    // restore cursor
+    const newPos = before.length + inserted.length;
+    // tick needed — let Svelte flush the binding first
+    requestAnimationFrame(() => {
+      textarea?.focus();
+      textarea?.setSelectionRange(newPos, newPos);
+    });
+  }
+
   export function focusTextarea() {
     textarea?.focus();
   }
 
+  let minHeight = 0;
+
+  function autoResize() {
+    if (!textarea) return;
+    if (minHeight === 0) minHeight = textarea.clientHeight;
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.max(textarea.scrollHeight, minHeight) + 'px';
+  }
+
+  $effect(() => {
+    if (textarea) {
+      const _ = prompt; // track prompt changes
+      autoResize();
+    }
+  });
+
+  function handleInput() {
+    detectMention(prompt, textarea?.selectionStart ?? prompt.length);
+    autoResize();
+  }
+
   function handleKeydown(e: KeyboardEvent) {
+    if (showDropdown && filteredSkills.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedIndex = (selectedIndex + 1) % filteredSkills.length;
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIndex = (selectedIndex - 1 + filteredSkills.length) % filteredSkills.length;
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        insertMention(filteredSkills[selectedIndex]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        showDropdown = false;
+        return;
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onSend();
@@ -67,15 +166,32 @@
 </script>
 
 <div class="composer-wrapper">
+  {#if showDropdown && filteredSkills.length > 0}
+    <div class="mention-dropdown">
+      {#each filteredSkills as skill, i}
+        <button
+          class="mention-item"
+          class:selected={i === selectedIndex}
+          onmousedown={(e) => {
+            e.preventDefault();
+            insertMention(skill);
+          }}
+        >
+          <span class="mention-at">@</span>{skill.name}
+        </button>
+      {/each}
+    </div>
+  {/if}
+
   <section class="composer">
     {#if attachedImages.length > 0}
       <div class="image-strip">
         {#each attachedImages as img, i}
           <div class="image-thumb">
             <img src={img.dataUrl} alt={img.name} />
-            <Button variant="outline" onclick={() => removeImage(i)} title="Remove"
-              ><Icon name="close" /></Button
-            >
+            <button class="remove-btn" onclick={() => removeImage(i)} title="Remove">
+              <Icon name="close" size={10} />
+            </button>
           </div>
         {/each}
       </div>
@@ -85,9 +201,10 @@
       bind:this={textarea}
       bind:value={prompt}
       onkeydown={handleKeydown}
+      oninput={handleInput}
       onpaste={handlePaste}
       rows="3"
-      placeholder="Ask Claude to do something in Figma…"
+      placeholder="Ask Claude to do something in Figma… (type @ to invoke a skill)"
       disabled={isSending}
     ></textarea>
 
@@ -162,9 +279,32 @@
     width: 56px;
     height: 56px;
     border-radius: var(--radius-md);
-    overflow: hidden;
     border: 1px solid var(--color-border-2);
     flex-shrink: 0;
+
+    & .remove-btn {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border-2);
+      border-radius: 50%;
+      color: var(--color-text-primary);
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 1;
+    }
+
+    &:hover .remove-btn {
+      opacity: 1;
+    }
   }
 
   .image-thumb img {
@@ -172,6 +312,7 @@
     height: 100%;
     object-fit: cover;
     display: block;
+    border-radius: var(--radius-md);
   }
 
   textarea {
@@ -187,7 +328,8 @@
     outline: none;
     resize: none;
     line-height: 1.4;
-    min-height: 96px;
+    overflow-y: auto;
+    max-height: 160px;
   }
 
   textarea::placeholder {
@@ -197,6 +339,44 @@
 
   textarea:disabled {
     opacity: 0.5;
+  }
+
+  .mention-dropdown {
+    position: relative;
+    bottom: 0;
+    left: 12px;
+    right: 12px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border-2);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 4px;
+    z-index: 10;
+  }
+
+  .mention-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 7px 10px;
+    background: none;
+    border: none;
+    color: var(--color-text-primary);
+    font-size: 12px;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    gap: 2px;
+
+    &:hover,
+    &.selected {
+      background: var(--color-surface-2);
+    }
+  }
+
+  .mention-at {
+    color: var(--color-teal);
+    font-weight: 600;
   }
 
   .divider {

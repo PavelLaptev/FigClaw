@@ -50,6 +50,7 @@ h6 {
   /* Accent — teal */
   --color-teal: #00e5cc;
   --color-teal-bg: rgba(0, 229, 204, 0.08);
+  --color-teal-border: rgba(0, 229, 204, 0.25);
 
   /* Status — green */
   --color-green: #4ade80;

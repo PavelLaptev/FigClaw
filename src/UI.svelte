@@ -291,13 +291,20 @@
     });
   }
 
-  // ─── Build system prompt (base + injected custom skills) ─────────────────
+  // ─── Build system prompt (base + injected active skills) ─────────────────
+  // Active skills are always-on — injected into every conversation.
+  // Passive skills do nothing until explicitly @mentioned.
   function buildSystemPrompt(): string {
-    if (skills.length === 0) return SYSTEM_PROMPT;
-    const skillsSection = skills
-      .map((s) => `### Skill: ${s.name} (id: ${s.id})\n\n${s.content}`)
+    const activeSkills = skills.filter((s) => !s.isDefault && s.mode !== 'passive');
+    if (activeSkills.length === 0) return SYSTEM_PROMPT;
+    const skillsSection = activeSkills
+      .map((s) => '### Skill: ' + s.name + ' (id: ' + s.id + ')\n\n' + s.content)
       .join('\n\n---\n\n');
-    return `${SYSTEM_PROMPT}\n\n## Custom Skills\n\nThe user has provided the following custom skill documents. Treat these as active behavior instructions and follow them by default unless they conflict with tool constraints, safety requirements, or explicit user requests. Each skill has an id you can use with the \`update_skill\` tool to modify it.\n\n${skillsSection}`;
+    return (
+      SYSTEM_PROMPT +
+      '\n\n## Custom Skills\n\nThe user has provided the following active skill documents. Apply them as persistent behaviour instructions throughout the conversation unless they conflict with tool constraints, safety requirements, or explicit user requests.\n\n' +
+      skillsSection
+    );
   }
 
   // ─── Claude API call (fetch lives here in the iframe — no CORS issue) ─────
@@ -359,7 +366,11 @@
   // ─── Agent loop ───────────────────────────────────────────────────────────
   let storedApiKey = $state('');
 
-  async function runAgentLoop(userText: string, images: AttachedImage[] = []) {
+  async function runAgentLoop(
+    userText: string,
+    images: AttachedImage[] = [],
+    displayText?: string
+  ) {
     if (!storedApiKey) {
       statusMessage = 'No API key. Save your Claude API key first.';
       return;
@@ -368,7 +379,11 @@
     isSending = true;
     abortController = new AbortController();
     const signal = abortController.signal;
-    pushDisplay({ role: 'user', text: userText, images: images.map((i) => i.dataUrl) });
+    pushDisplay({
+      role: 'user',
+      text: displayText ?? userText,
+      images: images.map((i) => i.dataUrl),
+    });
 
     // Build multipart content if images are attached
     let userContent: string | ContentBlock[];
@@ -486,10 +501,29 @@
     }
   }
 
+  // Extract @skill-name mentions from text, inject their content, return cleaned text.
+  // Only passive skills can be @mentioned.
+  function resolveSkillMentions(text: string): { resolvedText: string; injected: Skill[] } {
+    const activeSkills = skills.filter((s) => s.mode === 'passive');
+    const mentionPattern = /@([-\w]+)/g;
+    const injected: Skill[] = [];
+    const resolvedText = text
+      .replace(mentionPattern, (match, name) => {
+        const skill = activeSkills.find((s) => s.name.toLowerCase() === name.toLowerCase());
+        if (skill) {
+          if (!injected.find((s) => s.id === skill.id)) injected.push(skill);
+          return '';
+        }
+        return match;
+      })
+      .trim();
+    return { resolvedText, injected };
+  }
+
   async function sendMessage() {
-    const text = prompt.trim();
+    const rawText = prompt.trim();
     const images = attachedImages.slice();
-    if ((!text && images.length === 0) || isSending) return;
+    if ((!rawText && images.length === 0) || isSending) return;
     if (!storedApiKey) {
       activeTab = 'settings';
       shakeApiKey = false;
@@ -498,7 +532,17 @@
     }
     prompt = '';
     attachedImages = [];
-    await runAgentLoop(text, images);
+
+    const { resolvedText, injected } = resolveSkillMentions(rawText);
+    let finalText = resolvedText;
+    if (injected.length > 0) {
+      const skillBlock = injected
+        .map((s) => '<skill name="' + s.name + '">\n' + s.content + '\n</skill>')
+        .join('\n\n');
+      finalText = (skillBlock + '\n\n' + resolvedText).trim();
+    }
+
+    await runAgentLoop(finalText, images, rawText);
   }
 
   function persistHistory(chats: SavedChat[]) {
@@ -568,6 +612,13 @@
 
   function removeSkill(id: string) {
     skills = skills.filter((s) => s.id !== id);
+    persistSkills(skills);
+  }
+
+  function toggleSkillMode(id: string) {
+    skills = skills.map((s) =>
+      s.id === id ? { ...s, mode: s.mode === 'active' ? 'passive' : 'active' } : s
+    );
     persistSkills(skills);
   }
 
@@ -677,7 +728,12 @@
       onRemove={() => sendToPlugin({ type: 'save-api-key', apiKey: '' })}
     />
   {:else if activeTab === 'skills'}
-    <Skills skills={allSkills} onAdd={addSkill} onRemove={removeSkill} />
+    <Skills
+      skills={allSkills}
+      onAdd={addSkill}
+      onRemove={removeSkill}
+      onToggleMode={toggleSkillMode}
+    />
   {:else if activeTab === 'history'}
     <History
       {savedChats}
@@ -713,6 +769,7 @@
       bind:this={composer}
       bind:prompt
       bind:attachedImages
+      skills={allSkills.filter((s) => !s.isDefault && s.mode === 'passive')}
       {isSending}
       onSend={sendMessage}
       onStop={stopAgent}
