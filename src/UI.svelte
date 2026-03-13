@@ -81,6 +81,34 @@
 
   let messagesContainer = $state<HTMLElement | null>(null);
   let composer = $state<Composer | null>(null);
+  let mainEl = $state<HTMLElement | null>(null);
+
+  const CHAT_HEIGHT = 680;
+  const MAX_HEIGHT = 800;
+
+  function sendResize() {
+    if (!mainEl) return;
+    const h = Math.min(mainEl.scrollHeight, MAX_HEIGHT);
+    console.log('[resize] main.scrollHeight:', mainEl.scrollHeight, '→ sending h:', h);
+    sendToPlugin({ type: 'resize', width: 400, height: h });
+  }
+
+  $effect(() => {
+    const tab = activeTab;
+    console.log('[resize] tab changed to:', tab);
+    if (tab === 'chat') {
+      sendToPlugin({ type: 'resize', width: 400, height: CHAT_HEIGHT });
+      return;
+    }
+    tick().then(() => {
+      console.log('[resize] after tick, main.scrollHeight:', mainEl?.scrollHeight);
+      sendResize();
+    });
+    if (!mainEl) return;
+    const observer = new ResizeObserver(sendResize);
+    observer.observe(mainEl);
+    return () => observer.disconnect();
+  });
 
   $effect(() => {
     if (composer) tick().then(() => composer?.focusTextarea());
@@ -714,7 +742,7 @@
   sendToPlugin({ type: 'request-init' });
 </script>
 
-<main class="plugin">
+<main class="plugin" class:auto-height={activeTab !== 'chat'} bind:this={mainEl}>
   <Header bind:activeTab onClear={clearChat} />
 
   {#if activeTab === 'settings'}
@@ -783,6 +811,11 @@
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
+  }
+
+  main.auto-height {
+    height: auto;
+    overflow: visible;
   }
 
   .chat-wrapper {

@@ -131,7 +131,7 @@
 
     {#if skills.filter((s) => !s.isDefault).length === 0}
       <span class="drop-label"
-        >No custom skills yet.<br />Drop .md / .txt files<br />or click to browse.</span
+        >No custom skills yet.<br />Add more by dropping .md / .txt<br />files or click to browse</span
       >
     {:else}
       <span class="drop-label">Add more by dropping .md / .txt<br />files or click to browse</span>
@@ -435,7 +435,7 @@
     color: var(--color-text-tertiary);
     text-align: center;
     margin: 0;
-    padding: 10px var(--spacing-inner-padding) 20px;
+    padding: 10px var(--spacing-inner-padding) 32px;
     flex-shrink: 0;
 
     a {

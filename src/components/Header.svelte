@@ -36,7 +36,7 @@
   </nav>
   <div class="header-actions">
     {#if activeTab === 'chat'}
-      <Button onclick={onClear} title="New chat" variant="outline"><Icon name="plus" /></Button>
+      <Button onclick={onClear} title="New chat" variant="outline">New<Icon name="plus" /></Button>
     {/if}
   </div>
 </header>
@@ -45,6 +45,7 @@
   .header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
     flex-shrink: 0;
     padding: var(--spacing-inner-padding);
