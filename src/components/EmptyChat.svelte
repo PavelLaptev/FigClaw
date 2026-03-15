@@ -45,7 +45,8 @@
   </svg>
 
   <p class="empty-text">
-    Chat with your canvas. Claude can inspect nodes,<br />run code, and make changes.
+    Chat with your canvas. Claude can inspect nodes, run code, and make changes.
+    <br />
     <a href="https://github.com/PavelLaptev/figclaw" target="_blank" rel="noreferrer"
       >Read docs ↗</a
     >
@@ -212,10 +213,10 @@
   .empty-text {
     font-size: 14px;
     color: var(--color-text-tertiary);
+    max-width: 360px;
     line-height: 1.5;
     text-align: center;
     padding: 20px;
-
     opacity: 0;
     animation: fade-up 0.3s ease forwards;
   }
@@ -226,7 +227,7 @@
       transform: translateY(6px);
     }
     to {
-      opacity: 0.6;
+      opacity: 1;
       transform: translateY(0);
     }
   }

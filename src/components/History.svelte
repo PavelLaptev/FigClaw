@@ -2,6 +2,7 @@
   import Badge from './Badge.svelte';
   import Button from './Button.svelte';
   import Icon from './Icon.svelte';
+  import EmptyState from './EmptyState.svelte';
 
   type DisplayMessage = {
     role: 'user' | 'assistant' | 'tool' | 'code';
@@ -56,21 +57,45 @@
 
 <section class="history">
   {#if savedChats.length === 0}
-    <p class="empty">
-      No past chats yet.<br />Start a conversation, then clear it to save it here.
-    </p>
+    <EmptyState padding="40px">
+      {#snippet icon()}
+        <svg
+          width="68"
+          height="52"
+          viewBox="0 0 68 52"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M40.25 0.75V33.25H30.25V45.2744L17.5713 33.4512L17.3555 33.25H0.75V0.75H40.25Z"
+            stroke="var(--color-text-tertiary)"
+            stroke-width="1.5"
+          />
+          <path
+            d="M44 12.5H67V41H49L40.5 49.5V41H34.5"
+            stroke="var(--color-text-tertiary)"
+            stroke-width="1.5"
+            stroke-dasharray="2 2"
+          />
+        </svg>
+      {/snippet}
+      {#snippet text()}
+        No past chats yet.<br />New chats are saved automatically.
+      {/snippet}
+    </EmptyState>
   {:else}
     <ul class="list">
       {#each savedChats.filter((c) => c.id === currentChatId) as chat (chat.id)}
         <li class="item active">
           <div class="item-meta">
             <span class="title">{chat.title}</span>
-            <Badge>applied</Badge>
+            <Badge variant="active">applied</Badge>
           </div>
           <span class="sub">{formatDate(chat.savedAt)} · {msgCount(chat)} messages</span>
           <div class="item-actions">
-            <Button variant="outline" onclick={onUnapply}>Unapply <Icon name="close" /></Button>
-            <div class="vertical-devider"></div>
+            <Button variant="ghost" onclick={onUnapply} title="Unapply"
+              ><Icon name="close" /></Button
+            >
             <Button variant="ghost" onclick={() => onDelete(chat.id)} title="Delete"
               ><Icon name="bin" /></Button
             >
@@ -84,10 +109,9 @@
           </div>
           <span class="sub">{formatDate(chat.savedAt)} · {msgCount(chat)} messages</span>
           <div class="item-actions">
-            <Button variant="outline" onclick={() => onResume(chat)}
-              >Apply chat <Icon name="arrow-up" /></Button
+            <Button variant="ghost" onclick={() => onResume(chat)} title="Apply"
+              ><Icon name="arrow-up" /></Button
             >
-            <div class="vertical-devider"></div>
             <Button variant="ghost" onclick={() => onDelete(chat.id)} title="Delete"
               ><Icon name="bin" /></Button
             >
@@ -104,15 +128,6 @@
     flex-direction: column;
     flex: 1;
     overflow: hidden;
-  }
-
-  .empty {
-    font-size: 12px;
-    opacity: 0.45;
-    line-height: 1.7;
-    text-align: center;
-    padding: var(--spacing-inner-padding);
-    margin: 0;
   }
 
   .list {
@@ -143,7 +158,7 @@
     grid-column: 1;
     grid-row: 1;
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 6px;
     min-width: 0;
   }
@@ -171,12 +186,6 @@
     grid-row: 1 / 3;
     display: flex;
     align-items: center;
-    gap: 10px;
-  }
-
-  .vertical-devider {
-    width: 1px;
-    height: calc(var(--height-btn) - 8px);
-    background: var(--color-border-1);
+    gap: 4px;
   }
 </style>

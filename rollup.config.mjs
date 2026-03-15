@@ -9,7 +9,6 @@ import typescript from '@rollup/plugin-typescript';
 import postcss from 'rollup-plugin-postcss';
 import cssnano from 'cssnano';
 import autoprefixer from 'autoprefixer';
-
 /* Inline to single html */
 import htmlBundle from 'rollup-plugin-html-bundle';
 
@@ -42,6 +41,7 @@ export default [
       format: 'iife',
       name: 'ui',
       file: 'public/build/bundle.js',
+      sourcemap: !production,
     },
     plugins: [
       rawMd(),
@@ -64,12 +64,11 @@ export default [
       commonjs(),
       typescript({
         tsconfig: './tsconfig.json',
-        sourceMap: !production,
         declaration: false,
       }),
       postcss({
         extensions: ['.css'],
-        plugins: [cssnano(), autoprefixer()],
+        plugins: [autoprefixer(), cssnano()],
       }),
       htmlBundle({
         template: 'src/template.html',
@@ -77,9 +76,9 @@ export default [
         inline: true,
       }),
 
-      // Watch the `dist` directory and refresh the
+      // Watch the `public` directory and refresh the
       // browser on changes when not in production
-      !production && livereload('public'),
+      !production && livereload({ watch: 'public', delay: 200 }),
 
       // If we're building for production (npm run build
       // instead of npm run dev), minify

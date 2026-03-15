@@ -36,7 +36,7 @@
   </nav>
   <div class="header-actions">
     {#if activeTab === 'chat'}
-      <Button onclick={onClear} title="New chat" variant="outline">New<Icon name="plus" /></Button>
+      <Button onclick={onClear} variant="outline">New<Icon name="plus" /></Button>
     {/if}
   </div>
 </header>

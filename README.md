@@ -23,6 +23,7 @@ Figma's Plugin API is powerful, but writing plugins can be a chore — especiall
 - **Skill modes** — set each custom skill to `active` (always on) or `passive` (invoked only when mentioned)
 - **Image attachments** — attach screenshots or reference images to any message
 - **Chat history** — conversations are saved across sessions and can be resumed or deleted
+- **Cross-file chat** — the same conversation can be continued across different Figma files; open the **History** tab in any file and resume a chat started elsewhere
 - **Persistent API key** — stored locally via `figma.clientStorage`, never leaves your machine
 
 ## How it works
@@ -105,7 +106,7 @@ Load any `.md` file from the **Skills** tab, write your own, or grab one of the 
 3. Optionally load a skill from the **Skills** tab, and set it to `active` (always-on) or `passive` (on-demand via `@mention`).
 4. Switch to the **Chat** tab, type a message, and press **Send** — or attach an image first.
 
-The **History** tab shows all saved conversations. Click any entry to resume it.
+The **History** tab shows all saved conversations. Click any entry to resume it. Because history is stored in `figma.clientStorage` (shared across the plugin), you can continue the same chat from any Figma file — not just the one where it started.
 
 ### Example prompts
 

@@ -293,11 +293,20 @@
   async function fetchDocs(url: string): Promise<string> {
     try {
       const resp = await fetch(url);
-      if (!resp.ok) return `HTTP ${resp.status} fetching ${url}`;
-      const html = await resp.text();
-      // Strip tags to get readable plain text
+      if (!resp.ok) {
+        if (resp.status === 404) {
+          return `404 Not Found: the file "${url}" does not exist in the snapshot repo. Do NOT guess other paths — fetch the slug index first (https://raw.githubusercontent.com/PavelLaptev/figma-api-snapshot/master/out/index.json) to find the correct slug.`;
+        }
+        return `HTTP ${resp.status} fetching ${url}`;
+      }
+      const body = await resp.text();
+      // JSON files (snapshot repo) — return as-is without HTML parsing
+      if (url.endsWith('.json') || resp.headers.get('content-type')?.includes('json')) {
+        return body.slice(0, 12000);
+      }
+      // HTML pages — strip tags to get readable plain text
       const tmp = document.createElement('div');
-      tmp.innerHTML = html;
+      tmp.innerHTML = body;
       // Remove scripts/styles
       tmp.querySelectorAll('script,style,nav,footer').forEach((el) => el.remove());
       const text = (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();

@@ -1,4 +1,4 @@
-<script context="module" lang="ts">
+<script module lang="ts">
   type AnthropicModel = { id: string; display_name: string };
   // True module-level cache — survives component unmount/remount
   let cachedModels: AnthropicModel[] | null = null;
@@ -8,6 +8,7 @@
 <script lang="ts">
   import Badge from './Badge.svelte';
   import Button from './Button.svelte';
+  import FormField from './FormField.svelte';
   import Input from './Input.svelte';
   import Icon from './Icon.svelte';
   import Select from './Select.svelte';
@@ -87,16 +88,15 @@
 </script>
 
 <section class="settings">
-  <div class="input-wrap" class:shake>
-    <div class="model-label-row">
-      <label for="api-key">Claude API key</label>
+  <FormField label="Claude API key" for="api-key">
+    {#snippet badge()}
       {#if hasApiKey}
-        <Badge variant="saved">✓ Saved in storage</Badge>
+        <Badge variant="saved">Saved in storage</Badge>
       {:else}
-        <Badge variant="missing">✗ Not saved in storage</Badge>
+        <Badge variant="missing">Not saved</Badge>
       {/if}
-    </div>
-    <div class="row">
+    {/snippet}
+    <div class="row" class:shake>
       <Input
         id="api-key"
         type="password"
@@ -113,31 +113,41 @@
           <Icon name="bin" />
         </Button>
       {:else}
-        <Button variant="primary" onclick={onSave}>Save key</Button>
+        <Button variant="primary" onclick={onSave}
+          >Save key
+          <Icon name="tick" />
+        </Button>
       {/if}
     </div>
     {#if !hasApiKey}
-      <p class="hint">
-        Get your API key at <a href="https://console.anthropic.com/settings/keys" target="_blank"
-          >console.anthropic.com</a
-        >
-      </p>
+      <div class="hint">
+        <p>
+          Get your API key at <a href="https://console.anthropic.com/settings/keys" target="_blank"
+            >console.anthropic.com</a
+          >
+        </p>
+        <p>
+          The key is stored locally in your browser's storage and never sent anywhere until you
+          click "Save key".
+        </p>
+      </div>
     {/if}
-  </div>
+  </FormField>
 
   {#if apiKey}
-    <div class="input-wrap">
-      <label for="model">Model</label>
+    <FormField label="Model" for="model">
+      {#snippet badge()}
+        {#if modelsError}
+          <Badge variant="missing">{modelsError}</Badge>
+        {/if}
+      {/snippet}
       <Select
         id="model"
         bind:value={model}
         options={models.map((m) => ({ value: m.id, label: m.display_name }))}
         disabled={modelsLoading}
       />
-      {#if modelsError}
-        <Badge variant="missing">{modelsError}</Badge>
-      {/if}
-    </div>
+    </FormField>
   {/if}
 </section>
 
@@ -153,18 +163,6 @@
   .row {
     display: flex;
     gap: 6px;
-  }
-
-  label {
-    font-size: 13px;
-    opacity: 0.6;
-    margin: 0;
-  }
-
-  .input-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
   }
 
   .shake {
@@ -192,15 +190,17 @@
     }
   }
 
-  .model-label-row {
+  .hint {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
   }
 
-  .hint {
+  .hint p {
     margin: 0;
-    font-size: 11px;
+    font-size: 12px;
+    line-height: 1.5;
     opacity: 0.4;
   }
 

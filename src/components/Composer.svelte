@@ -214,7 +214,7 @@
       <Button
         onclick={() => fileInput?.click()}
         disabled={isSending}
-        title="Attach image"
+        title="Add image"
         variant="outline"
       >
         <Icon name="image" />
@@ -324,7 +324,7 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(---color-text-primary);
+    color: var(--color-text-primary);
     outline: none;
     resize: none;
     line-height: 1.4;
@@ -333,7 +333,7 @@
   }
 
   textarea::placeholder {
-    color: var(---color-text-primary);
+    color: var(--color-text-primary);
     opacity: 0.2;
   }
 

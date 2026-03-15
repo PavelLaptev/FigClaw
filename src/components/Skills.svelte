@@ -2,6 +2,7 @@
   import Badge from './Badge.svelte';
   import Button from './Button.svelte';
   import Icon from './Icon.svelte';
+  import EmptyState from './EmptyState.svelte';
   import { slide } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
 
@@ -116,29 +117,35 @@
     ondragleave={onDragLeave}
     ondrop={onDrop}
   >
-    <svg width="43" height="47" viewBox="0 0 43 47" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M28.71 0.75L42.25 15.8203V46.25H0.75V0.75H28.71Z"
-        stroke="var(--color-text-tertiary)"
-        stroke-width="1.5"
-      />
-      <path
-        d="M18.0647 21.1351L22.295 17.5676L20.482 14H13.2302L11 36H31.964C34.3813 33.027 32.5683 26.4865 26.5252 26.4865C21.6906 26.4865 19.6763 29.6577 19.2734 31.2432M18.0647 21.1351L15.6475 18.7568M18.0647 21.1351L20.482 29.4595"
-        stroke="var(--color-text-tertiary)"
-        stroke-width="1.5"
-      />
-    </svg>
-
     {#if skills.filter((s) => !s.isDefault).length === 0}
-      <span class="drop-label"
-        >No custom skills yet.<br />Add more by dropping .md / .txt<br />files or click to browse</span
-      >
+      <EmptyState>
+        {#snippet icon()}
+          <svg
+            width="43"
+            height="47"
+            viewBox="0 0 43 47"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M28.71 0.75L42.25 15.8203V46.25H0.75V0.75H28.71Z"
+              stroke="var(--color-text-tertiary)"
+              stroke-width="1.5"
+            />
+            <path
+              d="M18.0647 21.1351L22.295 17.5676L20.482 14H13.2302L11 36H31.964C34.3813 33.027 32.5683 26.4865 26.5252 26.4865C21.6906 26.4865 19.6763 29.6577 19.2734 31.2432M18.0647 21.1351L15.6475 18.7568M18.0647 21.1351L20.482 29.4595"
+              stroke="var(--color-text-tertiary)"
+              stroke-width="1.5"
+            />
+          </svg>
+        {/snippet}
+        {#snippet text()}
+          No custom skills yet.<br />Drop .md / .txt files or click to browse.
+        {/snippet}
+      </EmptyState>
     {:else}
       <span class="drop-label">Add more by dropping .md / .txt<br />files or click to browse</span>
     {/if}
-    <!-- {#if skills.filter((s) => !s.isDefault).length === 0}
-      <p class="empty-hint">No custom skills yet. Drop a .md file to add one.</p>
-    {/if} -->
     <input
       bind:this={fileInput}
       type="file"
@@ -239,8 +246,6 @@
   .skills {
     display: flex;
     flex-direction: column;
-    flex: 1;
-    overflow: hidden;
   }
 
   .drop-zone {
@@ -251,7 +256,7 @@
     gap: 14px;
     border: 1px dashed var(--color-border-2);
     border-radius: var(--radius-lg);
-    padding: 32px;
+    padding: 24px;
     cursor: pointer;
     transition:
       border-color 0.15s,
@@ -295,7 +300,6 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    overflow-y: auto;
     padding: var(--spacing-inner-padding);
     padding-top: 0;
   }
@@ -438,7 +442,7 @@
     padding: 10px var(--spacing-inner-padding) 32px;
     flex-shrink: 0;
 
-    a {
+    & a {
       color: var(--color-accent);
       text-decoration: underline;
       text-underline-offset: 2px;

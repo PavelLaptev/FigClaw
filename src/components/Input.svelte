@@ -19,7 +19,7 @@
   input {
     width: 100%;
     border-radius: var(--radius-md);
-    font-size: 13px;
+    font-size: 14px;
     height: var(--height-btn);
     padding: 0 8px;
     border: 1px solid var(--color-border-2);

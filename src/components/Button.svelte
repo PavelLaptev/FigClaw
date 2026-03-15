@@ -21,11 +21,22 @@
   }: Props = $props();
 </script>
 
-<button class="btn btn--{variant}" {onclick} {disabled} {title} aria-pressed={ariaPressed}>
-  {#if children}
-    {@render children()}
+<div class="btn-wrap">
+  <button
+    class="btn btn--{variant}"
+    {onclick}
+    {disabled}
+    aria-label={title}
+    aria-pressed={ariaPressed}
+  >
+    {#if children}
+      {@render children()}
+    {/if}
+  </button>
+  {#if title}
+    <span class="tooltip" role="tooltip">{title}</span>
   {/if}
-</button>
+</div>
 
 <style>
   .btn {
@@ -88,5 +99,33 @@
 
   .btn--outline:not(:disabled):hover {
     background: var(--color-surface-1);
+  }
+
+  /* Tooltip */
+  .btn-wrap {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .tooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a;
+    color: var(--color-text-primary);
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 3px 7px;
+    border-radius: var(--radius-sm);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s ease;
+    z-index: 100;
+  }
+
+  .btn-wrap:hover .tooltip {
+    opacity: 1;
   }
 </style>

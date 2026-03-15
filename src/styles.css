@@ -20,7 +20,7 @@ h6 {
 
 :root {
   /* Base */
-  --color-bg: #1e2126;
+  --color-bg: #272727;
   --color-black: #000000;
 
   /* Text */
@@ -43,9 +43,9 @@ h6 {
   --color-overlay-70: rgba(0, 0, 0, 0.7);
 
   /* Accent — red */
-  --color-accent: #ff4741;
-  --color-accent-hover: #d93b35;
-  --color-accent-bg: rgba(255, 77, 77, 0.1);
+  --color-accent: #f2571e;
+  --color-accent-hover: #e64b12;
+  --color-accent-bg: rgba(242, 87, 90, 0.1);
 
   /* Accent — teal */
   --color-teal: #00e5cc;
@@ -80,8 +80,9 @@ body {
   color: var(--color-text-primary);
   padding: 0;
   margin: 0;
+  overflow: hidden;
   font-family:
-    'Inter Tight',
+    'Inter',
     'Roboto',
     -apple-system,
     BlinkMacSystemFont,
