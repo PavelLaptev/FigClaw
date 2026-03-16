@@ -31,11 +31,19 @@
     apiHistory: ApiMessage[];
   };
 
-  export let savedChats: SavedChat[] = [];
-  export let currentChatId: string = '';
-  export let onResume: (chat: SavedChat) => void;
-  export let onDelete: (id: string) => void;
-  export let onUnapply: () => void;
+  let {
+    savedChats = [],
+    currentChatId = '',
+    onResume,
+    onDelete,
+    onUnapply,
+  }: {
+    savedChats?: SavedChat[];
+    currentChatId?: string;
+    onResume: (chat: SavedChat) => void;
+    onDelete: (id: string) => void;
+    onUnapply: () => void;
+  } = $props();
 
   function formatDate(ts: number): string {
     const d = new Date(ts);
@@ -53,9 +61,24 @@
   function msgCount(chat: SavedChat): number {
     return chat.displayMessages.filter((m) => m.role === 'user' || m.role === 'assistant').length;
   }
+
+  let listEl = $state<HTMLElement | null>(null);
+  let canScrollUp = $state(false);
+  let canScrollDown = $state(false);
+
+  function updateScrollState() {
+    if (!listEl) return;
+    canScrollUp = listEl.scrollTop > 0;
+    canScrollDown = listEl.scrollTop + listEl.clientHeight < listEl.scrollHeight - 1;
+  }
+
+  $effect(() => {
+    savedChats;
+    if (listEl) requestAnimationFrame(updateScrollState);
+  });
 </script>
 
-<section class="history">
+<section class="history" class:fade-top={canScrollUp} class:fade-bottom={canScrollDown}>
   {#if savedChats.length === 0}
     <EmptyState padding="40px">
       {#snippet icon()}
@@ -84,7 +107,7 @@
       {/snippet}
     </EmptyState>
   {:else}
-    <ul class="list">
+    <ul class="list" bind:this={listEl} onscroll={updateScrollState}>
       {#each savedChats.filter((c) => c.id === currentChatId) as chat (chat.id)}
         <li class="item active">
           <div class="item-meta">
@@ -124,10 +147,42 @@
 
 <style>
   .history {
+    position: relative;
     display: flex;
     flex-direction: column;
     flex: 1;
     overflow: hidden;
+
+    &::after,
+    &::before {
+      z-index: 1;
+      position: absolute;
+      left: 0;
+      content: '';
+      height: 30px;
+      width: 100%;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    &::after {
+      top: 0;
+      background: linear-gradient(var(--color-bg) 20%, transparent 100%);
+    }
+
+    &::before {
+      bottom: 0;
+      background: linear-gradient(transparent 0%, var(--color-bg) 80%);
+    }
+
+    &.fade-top::after {
+      opacity: 1;
+    }
+
+    &.fade-bottom::before {
+      opacity: 1;
+    }
   }
 
   .list {
@@ -140,6 +195,7 @@
     overflow-y: auto;
     flex: 1;
     padding: var(--spacing-inner-padding);
+    max-height: 650px;
   }
 
   .item {

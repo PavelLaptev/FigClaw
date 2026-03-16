@@ -342,10 +342,6 @@
   }
 
   .mention-dropdown {
-    position: relative;
-    bottom: 0;
-    left: 12px;
-    right: 12px;
     background: var(--color-bg);
     border: 1px solid var(--color-border-2);
     border-radius: var(--radius-lg);

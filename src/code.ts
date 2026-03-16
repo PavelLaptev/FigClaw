@@ -359,7 +359,6 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
     if (msg.type === 'resize') {
       const w = typeof msg.width === 'number' ? msg.width : 400;
       const h = typeof msg.height === 'number' ? msg.height : 680;
-      console.log('[plugin resize] received w:', w, 'h:', h);
       figma.ui.resize(w, Math.max(h, 200));
       return;
     }

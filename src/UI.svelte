@@ -89,19 +89,16 @@
   function sendResize() {
     if (!mainEl) return;
     const h = Math.min(mainEl.scrollHeight, MAX_HEIGHT);
-    console.log('[resize] main.scrollHeight:', mainEl.scrollHeight, '→ sending h:', h);
     sendToPlugin({ type: 'resize', width: 400, height: h });
   }
 
   $effect(() => {
     const tab = activeTab;
-    console.log('[resize] tab changed to:', tab);
     if (tab === 'chat') {
       sendToPlugin({ type: 'resize', width: 400, height: CHAT_HEIGHT });
       return;
     }
     tick().then(() => {
-      console.log('[resize] after tick, main.scrollHeight:', mainEl?.scrollHeight);
       sendResize();
     });
     if (!mainEl) return;
