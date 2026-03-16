@@ -75,12 +75,17 @@ h6 {
   --height-btn: 28px;
 }
 
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   background-color: var(--color-bg);
   color: var(--color-text-primary);
   padding: 0;
   margin: 0;
-  overflow: hidden;
   font-family:
     'Inter',
     'Roboto',

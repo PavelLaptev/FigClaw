@@ -799,15 +799,17 @@
       <p class="status">{statusMessage}</p>
     {/if}
 
-    <Composer
-      bind:this={composer}
-      bind:prompt
-      bind:attachedImages
-      skills={allSkills.filter((s) => !s.isDefault && s.mode === 'passive')}
-      {isSending}
-      onSend={sendMessage}
-      onStop={stopAgent}
-    />
+    <div class="composer-anchor">
+      <Composer
+        bind:this={composer}
+        bind:prompt
+        bind:attachedImages
+        skills={allSkills.filter((s) => !s.isDefault && s.mode === 'passive')}
+        {isSending}
+        onSend={sendMessage}
+        onStop={stopAgent}
+      />
+    </div>
   {/if}
 </main>
 
@@ -815,7 +817,7 @@
   main {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: 100%;
     overflow: hidden;
   }
 
@@ -827,6 +829,7 @@
   .chat-wrapper {
     position: relative;
     flex: 1;
+    min-height: 0;
     overflow: hidden;
 
     &::after {
@@ -850,6 +853,10 @@
       pointer-events: none;
       background: linear-gradient(transparent 0%, var(--color-bg) 80%);
     }
+  }
+
+  .composer-anchor {
+    flex-shrink: 0;
   }
 
   /* Chat */
