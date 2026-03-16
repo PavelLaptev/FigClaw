@@ -58,7 +58,7 @@
     }
     mentionStart = atIdx;
     mentionQuery = fragment;
-    showDropdown = skills.length > 0;
+    showDropdown = true;
   }
 
   function insertMention(skill: Skill) {
@@ -166,20 +166,24 @@
 </script>
 
 <div class="composer-wrapper">
-  {#if showDropdown && filteredSkills.length > 0}
+  {#if showDropdown}
     <div class="mention-dropdown">
-      {#each filteredSkills as skill, i}
-        <button
-          class="mention-item"
-          class:selected={i === selectedIndex}
-          onmousedown={(e) => {
-            e.preventDefault();
-            insertMention(skill);
-          }}
-        >
-          <span class="mention-at">@</span>{skill.name}
-        </button>
-      {/each}
+      {#if filteredSkills.length > 0}
+        {#each filteredSkills as skill, i}
+          <button
+            class="mention-item"
+            class:selected={i === selectedIndex}
+            onmousedown={(e) => {
+              e.preventDefault();
+              insertMention(skill);
+            }}
+          >
+            <span class="mention-at">@</span>{skill.name}
+          </button>
+        {/each}
+      {:else}
+        <div class="mention-empty">No passive skills available</div>
+      {/if}
     </div>
   {/if}
 
@@ -358,7 +362,7 @@
     background: none;
     border: none;
     color: var(--color-text-primary);
-    font-size: 12px;
+    font-size: 13px;
     font-family: inherit;
     text-align: left;
     cursor: pointer;
@@ -373,6 +377,13 @@
   .mention-at {
     color: var(--color-teal);
     font-weight: 600;
+  }
+
+  .mention-empty {
+    padding: 10px;
+    font-size: 13px;
+    color: var(--color-text-primary);
+    opacity: 0.4;
   }
 
   .divider {
