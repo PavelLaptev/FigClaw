@@ -18,9 +18,19 @@
   xmlns="http://www.w3.org/2000/svg"
   aria-hidden={title ? undefined : 'true'}
   role={title ? 'img' : undefined}
+  class={name === 'spinner' ? 'spinning' : undefined}
 >
   {#if title}
     <title>{title}</title>
   {/if}
   <path d={ICONS[name]} fill="currentColor" stroke="none" />
 </svg>
+
+<style>
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .spinning {
+    animation: spin 1s linear infinite;
+  }
+</style>

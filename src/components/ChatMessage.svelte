@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
   type TextPart = { type: 'text'; text: string } | { type: 'code'; lang: string; text: string };
 
   type DisplayMessage = {
@@ -36,7 +37,7 @@
     class:running={msg.toolStatus === 'running'}
     class:done={msg.toolStatus === 'done'}
   >
-    <span class="tool-icon">{msg.toolStatus === 'running' ? '⟳' : '✓'}</span>
+    <Icon name={msg.toolStatus === 'running' ? 'spinner' : 'tick'} />
     <span class="tool-name">{msg.text}</span>
   </div>
 {:else}
@@ -51,19 +52,21 @@
         {/each}
       </div>
     {/if}
-    {#each splitCodeBlocks(msg.text) as part}
-      {#if part.type === 'code'}
-        <details class="code-block inline-code-block">
-          <summary class="code-header">
-            <span>{part.lang || 'code'}</span>
-            <span class="code-toggle-hint">show</span>
-          </summary>
-          <pre class="code-body">{part.text}</pre>
-        </details>
-      {:else if part.text}
-        <p class="body">{part.text}</p>
-      {/if}
-    {/each}
+    <div class="content-wrap">
+      {#each splitCodeBlocks(msg.text) as part}
+        {#if part.type === 'code'}
+          <details class="code-block inline-code-block">
+            <summary class="code-header">
+              <span>{part.lang || 'code'}</span>
+              <span class="code-toggle-hint">show</span>
+            </summary>
+            <pre class="code-body">{part.text}</pre>
+          </details>
+        {:else if part.text}
+          <p class="body">{part.text}</p>
+        {/if}
+      {/each}
+    </div>
   </div>
 {/if}
 
@@ -92,6 +95,12 @@
     margin: 0 0 3px;
   }
 
+  .content-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
   .body {
     font-size: 13px;
     margin: 0;
@@ -118,7 +127,7 @@
 
   /* Code block */
   .inline-code-block {
-    margin-top: 4px;
+    margin: 4px 0;
   }
 
   .code-block {
@@ -127,9 +136,6 @@
     border: 1px solid transparent;
     align-self: flex-start;
     width: 100%;
-  }
-
-  .code-block[open] {
     border-color: var(--color-border-1);
   }
 
