@@ -15,6 +15,7 @@ File names use the node's name as the prefix (e.g. node `fav` → `fav-16x16.png
 
 | File name pattern    | Format | Size                       |
 | -------------------- | ------ | -------------------------- |
+| `<name>.svg`         | SVG    | Vector (scalable)          |
 | `<name>-16x16.png`   | PNG    | 16×16                      |
 | `<name>-32x32.png`   | PNG    | 32×32                      |
 | `<name>-180x180.png` | PNG    | 180×180 (Apple touch icon) |
@@ -32,6 +33,7 @@ if (!node) return { error: 'No node selected. Please select the icon first.' };
 const name = node.name.toLowerCase().replace(/\s+/g, '-');
 
 node.exportSettings = [
+  { format: 'SVG' },
   { format: 'PNG', constraint: { type: 'WIDTH', value: 16 }, suffix: '-16x16' },
   { format: 'PNG', constraint: { type: 'WIDTH', value: 32 }, suffix: '-32x32' },
   { format: 'PNG', constraint: { type: 'WIDTH', value: 180 }, suffix: '-180x180' },
@@ -59,6 +61,7 @@ After setting up the export settings, always show this snippet for the user to c
 **Use the actual node name** (lowercased, spaces replaced with `-`) as both the folder name and the filename prefix. For example, if the node is named `fav`, the paths become `/fav/fav-16x16.png`, `/fav/fav-32x32.png`, etc.
 
 ```html
+<link rel="icon" type="image/svg+xml" href="/<name>/<name>.svg" />
 <link rel="icon" type="image/png" sizes="16x16" href="/<name>/<name>-16x16.png" />
 <link rel="icon" type="image/png" sizes="32x32" href="/<name>/<name>-32x32.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="/<name>/<name>-180x180.png" />
@@ -69,6 +72,7 @@ After setting up the export settings, always show this snippet for the user to c
 Replace `<name>` with the actual node name. For a node named `fav` this becomes:
 
 ```html
+<link rel="icon" type="image/svg+xml" href="/fav/fav.svg" />
 <link rel="icon" type="image/png" sizes="16x16" href="/fav/fav-16x16.png" />
 <link rel="icon" type="image/png" sizes="32x32" href="/fav/fav-32x32.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="/fav/fav-180x180.png" />

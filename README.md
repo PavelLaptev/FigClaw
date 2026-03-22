@@ -85,17 +85,21 @@ Example:
 
 The repository ships with several example skills in the `skills/` folder:
 
-| Skill                   | Description                                                                     |
-| ----------------------- | ------------------------------------------------------------------------------- |
-| `accessibility.md`      | WCAG contrast checking and accessibility annotations                            |
-| `component-builder.md`  | Patterns for building production-ready components with variants and auto-layout |
-| `design-tokens.md`      | Creating and applying Figma Variables as design tokens                          |
-| `icon-exporter.md`      | Batch-exporting icons with consistent naming                                    |
-| `naming-conventions.md` | Enforcing layer naming rules                                                    |
-| `everything-is-pink.md` | Makes everything pink (demo)                                                    |
-| `overly-cautious.md`    | Claude adds excessive warnings to every action                                  |
-| `smokey-mode.md`        | Claude responds like Smokey from Friday — loud, animated, keeping it real       |
-| `t-800-mode.md`         | Claude responds like the T-800 — cold, precise, mission-focused                 |
+| Skill                    | Description                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `accessibility.md`       | WCAG contrast checking and accessibility annotations                            |
+| `component-builder.md`   | Patterns for building production-ready components with variants and auto-layout |
+| `design-tokens.md`       | Creating and applying Figma Variables as design tokens                          |
+| `favicon-exporter.md`    | Setting up favicon export settings (SVG + PNG) with HTML snippet generation     |
+| `icon-exporter.md`       | Batch-exporting icons with consistent naming                                    |
+| `naming-conventions.md`  | Enforcing layer naming rules                                                    |
+| `padding-maker.md`       | Adding uniform padding inside frames and sections                               |
+| `rename-to-file-safe.md` | Renaming layers to file-safe names (lowercase, hyphens, no special chars)       |
+| `everything-is-pink.md`  | Makes everything pink (demo)                                                    |
+| `overly-cautious.md`     | Claude adds excessive warnings to every action                                  |
+| `smokey-mode.md`         | Claude responds like Smokey from Friday — loud, animated, keeping it real       |
+| `t-800-mode.md`          | Claude responds like the T-800 — cold, precise, mission-focused                 |
+| `uwu-mode.md`            | Claude responds in hyper-affectionate UwU internet speak                        |
 
 Load any `.md` file from the **Skills** tab, write your own, or grab one of the examples above directly from the [`skills/` folder on GitHub](https://github.com/PavelLaptev/FigClaw/tree/main/skills).
 
