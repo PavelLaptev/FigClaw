@@ -68,37 +68,36 @@
 
   .segment {
     opacity: 0;
-    transform-origin: center bottom;
     animation: seg-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   }
 
   .seg-1 {
     animation-delay: 0.05s;
+    animation-name: seg-in-1;
+    transform-origin: 53px 49px;
+    --base-angle: -4deg;
+    --base-y: -1px;
+    --wobble-a: 10deg;
+    --wobble-b: 2deg;
   }
+
   .seg-2 {
     animation-delay: 0.15s;
+    transform-origin: 50px 49px;
   }
+
   .seg-3 {
     animation-delay: 0.25s;
+    transform-origin: 34px 64px;
+    --wobble-a: -8deg;
+    --wobble-b: 4deg;
   }
+
   .seg-4 {
     animation-delay: 0.35s;
-  }
-
-  .seg-1 {
-    transform-origin: 53.4378px 48.7391px;
-  }
-
-  .seg-2 {
-    transform-origin: 50.458px 48.7391px;
-  }
-
-  .seg-3 {
-    transform-origin: 33.9059px 63.5544px;
-  }
-
-  .seg-4 {
-    transform-origin: 33.9059px 78.3696px;
+    transform-origin: 34px 78px;
+    --wobble-a: 6deg;
+    --wobble-b: -3deg;
   }
 
   /* once intro finishes, lock opacity and clear animation on all segments */
@@ -107,94 +106,54 @@
     opacity: 1;
   }
 
-  .logo:hover .seg-1.intro-done {
-    animation: wobble-1 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+  .seg-1.intro-done {
+    transform: translateY(-1px) scale(1) rotate(var(--base-angle));
+  }
+
+  .logo:hover .seg-1.intro-done,
+  .logo:hover .seg-3.intro-done,
+  .logo:hover .seg-4.intro-done {
+    animation: wobble 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+  }
+
+  .logo:hover .seg-3.intro-done {
+    animation-delay: 0.05s;
+  }
+
+  .logo:hover .seg-4.intro-done {
+    animation-delay: 0.1s;
   }
 
   .logo:hover .seg-2.intro-done {
     animation: clamp 1s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
   }
 
-  .logo:hover .seg-3.intro-done {
-    animation: wobble-3 0.6s 0.05s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
-  }
-
-  .logo:hover .seg-4.intro-done {
-    animation: wobble-4 0.6s 0.1s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
-  }
-
-  @keyframes wobble-1 {
+  @keyframes wobble {
     0% {
-      opacity: 1;
-      transform: rotate(0deg);
+      transform: translateY(-1px) rotate(var(--base-angle, 0deg));
     }
     25% {
-      opacity: 1;
-      transform: rotate(5deg);
+      transform: translateY(var(--base-y, 0px)) rotate(var(--wobble-a));
     }
     55% {
-      opacity: 1;
-      transform: rotate(-3deg);
+      transform: translateY(var(--base-y, 0px)) rotate(var(--wobble-b));
     }
     100% {
-      opacity: 1;
-      transform: rotate(0deg);
-    }
-  }
-
-  @keyframes wobble-3 {
-    0% {
-      opacity: 1;
-      transform: rotate(0deg);
-    }
-    25% {
-      opacity: 1;
-      transform: rotate(-8deg);
-    }
-    55% {
-      opacity: 1;
-      transform: rotate(4deg);
-    }
-    100% {
-      opacity: 1;
-      transform: rotate(0deg);
-    }
-  }
-
-  @keyframes wobble-4 {
-    0% {
-      opacity: 1;
-      transform: rotate(0deg);
-    }
-    25% {
-      opacity: 1;
-      transform: rotate(6deg);
-    }
-    55% {
-      opacity: 1;
-      transform: rotate(-3deg);
-    }
-    100% {
-      opacity: 1;
-      transform: rotate(0deg);
+      transform: translateY(var(--base-y, 0px)) rotate(var(--base-angle, 0deg));
     }
   }
 
   @keyframes clamp {
     0% {
-      opacity: 1;
       transform: rotate(0deg);
     }
     20% {
-      opacity: 1;
       transform: rotate(-28deg);
     }
     45% {
-      opacity: 1;
       transform: rotate(6deg);
     }
     100% {
-      opacity: 1;
       transform: rotate(0deg);
     }
   }
@@ -207,6 +166,17 @@
     to {
       opacity: 1;
       transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes seg-in-1 {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.88) rotate(0deg);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(-1px) scale(1) rotate(var(--base-angle, 0deg));
     }
   }
 
