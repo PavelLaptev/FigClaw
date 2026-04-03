@@ -169,8 +169,8 @@
           {#if skill.isDefault}
             <Badge>built-in</Badge>
           {:else}
-            <Badge variant={skill.mode === 'active' ? 'active' : 'passive'}>
-              {skill.mode === 'active' ? 'active' : 'passive'}
+            <Badge variant={skill.mode === 'passive' ? 'passive' : 'active'}>
+              {skill.mode === 'passive' ? 'passive' : 'active'}
             </Badge>
           {/if}
         </div>
@@ -199,13 +199,13 @@
             >
             <button
               class="toggle"
-              class:toggle--on={skill.mode === 'active'}
-              title={skill.mode === 'active'
+              class:toggle--on={skill.mode !== 'passive'}
+              title={skill.mode !== 'passive'
                 ? 'Active — click to make passive'
                 : 'Passive — click to make active'}
               onclick={() => onToggleMode(skill.id)}
               role="switch"
-              aria-checked={skill.mode === 'active'}
+              aria-checked={skill.mode !== 'passive'}
             >
               <span class="toggle-thumb"></span>
             </button>

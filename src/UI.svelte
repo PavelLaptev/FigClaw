@@ -74,6 +74,13 @@
 
   let skills = $state<Skill[]>([]);
 
+  function normalizeSkills(input: Skill[]): Skill[] {
+    return input.map((skill) => ({
+      ...skill,
+      mode: skill.mode === 'passive' ? 'passive' : 'active',
+    }));
+  }
+
   let displayMessages = $state<DisplayMessage[]>([]);
   let apiHistory = $state<ApiMessage[]>([]);
   let savedChats = $state<SavedChat[]>([]);
@@ -673,7 +680,7 @@
         storedApiKey = String(msg.apiKey);
       }
       if (Array.isArray(msg.skills)) {
-        skills = msg.skills as Skill[];
+        skills = normalizeSkills(msg.skills as Skill[]);
       }
       if (Array.isArray(msg.chatHistory) && msg.chatHistory.length > 0) {
         const chats = msg.chatHistory as SavedChat[];
@@ -688,14 +695,14 @@
 
     if (msg.type === 'skills-value') {
       if (Array.isArray(msg.skills)) {
-        skills = msg.skills as Skill[];
+        skills = normalizeSkills(msg.skills as Skill[]);
       }
       return;
     }
 
     if (msg.type === 'skills-updated') {
       if (Array.isArray(msg.skills)) {
-        skills = msg.skills as Skill[];
+        skills = normalizeSkills(msg.skills as Skill[]);
       }
       return;
     }
