@@ -6,7 +6,7 @@
   "ui": "index.html",
   "capabilities": [],
   "enableProposedApi": false,
-  "editorType": ["figma"],
+  "editorType": ["figma", "figjam", "buzz"],
   "documentAccess": "dynamic-page",
   "networkAccess": {
     "allowedDomains": ["*"],
