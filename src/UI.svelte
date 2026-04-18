@@ -65,6 +65,7 @@
   let attachedImages = $state<AttachedImage[]>([]);
   let isSending = $state(false);
   let abortController = $state<AbortController | null>(null);
+  let hasInitState = $state(false);
 
   function stopAgent() {
     abortController?.abort();
@@ -116,6 +117,11 @@
 
   $effect(() => {
     if (composer) tick().then(() => composer?.focusTextarea());
+  });
+
+  $effect(() => {
+    if (!hasInitState) return;
+    sendToPlugin({ type: 'save-model', model });
   });
 
   // SYSTEM_PROMPT is imported from ./system-prompt.md at build time.
@@ -679,6 +685,9 @@
       if (msg.apiKey) {
         storedApiKey = String(msg.apiKey);
       }
+      if (typeof msg.model === 'string' && msg.model.trim()) {
+        model = msg.model.trim();
+      }
       if (Array.isArray(msg.skills)) {
         skills = normalizeSkills(msg.skills as Skill[]);
       }
@@ -690,6 +699,7 @@
         apiHistory = [...latest.apiHistory];
         currentChatId = latest.id;
       }
+      hasInitState = true;
       return;
     }
 

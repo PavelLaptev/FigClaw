@@ -2,6 +2,7 @@
 const STORAGE_KEY_API = 'claude_api_key';
 const STORAGE_KEY_SKILLS = 'claude_skills';
 const STORAGE_KEY_HISTORY = 'claude_chat_history';
+const STORAGE_KEY_MODEL = 'claude_model';
 
 figma.showUI(__html__, { themeColors: true, width: 400, height: 680 });
 
@@ -10,10 +11,12 @@ async function postInitState() {
   const apiKey = await figma.clientStorage.getAsync(STORAGE_KEY_API);
   const skills = await getSkills();
   const chatHistory = await getChatHistory();
+  const model = await getModel();
   figma.ui.postMessage({
     type: 'init',
     hasApiKey: Boolean(apiKey),
     apiKey: apiKey ? String(apiKey) : '',
+    model: model || '',
     skills,
     chatHistory,
   });
@@ -37,6 +40,20 @@ async function saveApiKey(apiKey: string) {
 async function getApiKey(): Promise<string | null> {
   const key = await figma.clientStorage.getAsync(STORAGE_KEY_API);
   return key ? String(key) : null;
+}
+
+async function saveModel(model: string): Promise<void> {
+  const trimmed = model.trim();
+  if (!trimmed) {
+    await figma.clientStorage.deleteAsync(STORAGE_KEY_MODEL);
+    return;
+  }
+  await figma.clientStorage.setAsync(STORAGE_KEY_MODEL, trimmed);
+}
+
+async function getModel(): Promise<string | null> {
+  const model = await figma.clientStorage.getAsync(STORAGE_KEY_MODEL);
+  return model ? String(model) : null;
 }
 
 // ─── Skills storage ───────────────────────────────────────────────────────────
@@ -104,6 +121,11 @@ async function handleStorageMessage(msg: PluginMessage): Promise<boolean> {
   if (msg.type === 'save-chat-history') {
     const chats = Array.isArray(msg.chats) ? msg.chats : [];
     await saveChatHistory(chats);
+    return true;
+  }
+
+  if (msg.type === 'save-model') {
+    await saveModel(String(msg.model || ''));
     return true;
   }
 
