@@ -248,6 +248,8 @@
 
 <style>
   .composer-wrapper {
+    position: relative;
+    z-index: 1;
     padding: 12px;
     padding-top: 0;
   }

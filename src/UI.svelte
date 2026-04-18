@@ -850,6 +850,7 @@
     overflow: hidden;
 
     &::after {
+      z-index: 1;
       position: absolute;
       top: 0;
       left: 0;
@@ -861,6 +862,7 @@
     }
 
     &::before {
+      z-index: 1;
       position: absolute;
       bottom: 0;
       left: 0;
